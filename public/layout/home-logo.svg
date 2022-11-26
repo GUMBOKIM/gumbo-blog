@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 30">
-    <g id="메인_로고">
+    <g id="main-logo">
         <path d="M8.49,2h1.2V8H8.49V9H7.28v1H.05V0H7.28V1H8.49ZM7.28,3V2H2.46V8H7.28V3Z"/>
         <path d="M19.77,0H21V2H13.75V4h6V5H18.56V6H13.75V8H21v2H11.34V0h8.43Z"/>
         <path d="M31,0h1.2V8H31V9H28.63v1h-2.4V9H23.82V8h-1.2V0H25V7h1.21V8h2.4V7h1.21V0Z"/>
