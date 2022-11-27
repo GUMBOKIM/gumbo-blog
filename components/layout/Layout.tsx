@@ -6,28 +6,13 @@ type Props = {
 
 export default function Layout({ children }: Props) {
   return (
-    <>
-      <header className="w-full flex">
-        <div className="flex-0">Logo</div>
-        <ul className="flex-1 flex justify-center gap-1">
-          <li>메뉴 1</li>
-          <li>메뉴 2</li>
-          <li>메뉴 3</li>
-          <li>메뉴 4</li>
-        </ul>
-      </header>
-      <div className="w-full flex">
-        <nav className="flex-0 w-[200px]">
-          <ul className="flex-col">
-            <li>서브 메뉴 1</li>
-            <li>서브 메뉴 2</li>
-            <li>서브 메뉴 3</li>
-            <li>서브 메뉴 4</li>
-          </ul>
-        </nav>
-        <section className="flex-1">{children}</section>
-      </div>
-      <footer>ASD</footer>
-    </>
+    <div className="w-full h-full grid grid-cols-5 gap-2">
+      <header className="col-span-5 bg-red-500 row-start-1">헤더입니다.</header>
+      <nav className="col-span-1 bg-red-400">네비게이션 입니다.</nav>
+      <main className="col-span-4 bg-red-300">메인 입니다.</main>
+      <footer className="col-span-5 bg-red-200 row-end-auto">
+        푸터 입니다.
+      </footer>
+    </div>
   );
 }
