@@ -2,11 +2,14 @@ import Link from "next/link";
 import HomeLogo from "@public/layout/home-logo.svg";
 import React, { useState } from "react";
 import Watch from "@components/layout/header/Watch";
+import { useRouter } from "next/router";
 
-const MenuList = ["Home", "About", "Post", "Doc", "Clip", "Resume"];
+const MenuList = ["home", "about", "post", "doc", "clip", "resume"];
 
 export default function Header() {
-  const [nowSelectedMenu, setNowSelectedMenu] = useState<string>("Home");
+  const router = useRouter();
+  const nowPath = router.asPath;
+
   const [isNavOpen, setIsNavOpen] = useState<boolean>(false);
 
   return (
@@ -20,17 +23,16 @@ export default function Header() {
           <Link
             key={menu}
             className={`text-center hover:text-gray-700 ${
-              nowSelectedMenu === menu ? "text-gray-900" : "text-gray-500"
+              nowPath.includes(menu) ? "text-gray-900" : "text-gray-500"
             }`}
-            onClick={() => setNowSelectedMenu(menu)}
-            href="/"
+            href={`/${menu}`}
           >
             {menu}
           </Link>
         ))}
       </nav>
       {/*화면 작을때 메뉴 버튼*/}
-      <div className="ml-auto hidden 2sm:block">
+      <div className="ml-auto hidden 2sm:block z-10">
         <button
           className={`relative w-5 h-5 p-0 m-0 text-sm border-2 ${
             isNavOpen ? "border-transparent" : "border-black"
@@ -49,13 +51,10 @@ export default function Header() {
             <Link
               key={menu}
               className={`text-center hover:text-gray-700 ${
-                nowSelectedMenu === menu ? "text-gray-900" : "text-gray-500"
+                nowPath.includes(menu) ? "text-gray-900" : "text-gray-500"
               }`}
-              onClick={() => {
-                setNowSelectedMenu(menu);
-                setIsNavOpen(false);
-              }}
-              href="/"
+              onClick={() => setIsNavOpen(false)}
+              href={`/${menu}`}
             >
               {menu}
             </Link>

@@ -25,6 +25,41 @@
         @apply bg-white;
     }
 
+    .window-header {
+        @apply relative;
+        @apply h-6;
+        @apply border-black;
+        @apply border-b-2;
+        @apply flex;
+        @apply items-center;
+        @apply justify-center;
+        background: repeating-linear-gradient(to bottom, transparent, transparent 2px, black 2px, black 4px);
+    }
+
+    .window-title {
+        @apply font-chicago;
+        @apply bg-white;
+        @apply inline-block;
+        @apply text-sm;
+        @apply px-1;
+    }
+
+    .window-fake-btn {
+        @apply absolute;
+        @apply w-5;
+        @apply h-5;
+        @apply left-2;
+        @apply border-black;
+        @apply border-2;
+        @apply bg-white;
+    }
+
+    .relative-center {
+        @apply top-1/2;
+        @apply left-1/2;
+        @apply -translate-y-1/2;
+        @apply -translate-x-1/2;
+    }
 }
 
 

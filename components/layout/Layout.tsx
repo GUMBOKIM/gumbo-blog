@@ -10,7 +10,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <section className="w-screen min-h-screen flex flex-col rounded-2xl border-b-2 border-black bg-dot">
       <Header />
-      <main className="p-2 max-w-6xl bg-red-900">{children}</main>
+      <main className="relative flex-1 self-stretch p-2">{children}</main>
       <Footer />
     </section>
   );
