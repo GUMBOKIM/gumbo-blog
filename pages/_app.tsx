@@ -1,4 +1,4 @@
-import "tailwindcss/tailwind.css";
+import "../styles/globals.css";
 import { ReactElement, ReactNode } from "react";
 import { NextPage } from "next";
 import type { AppProps } from "next/app";
