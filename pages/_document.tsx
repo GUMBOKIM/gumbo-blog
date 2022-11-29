@@ -33,7 +33,7 @@ export default class MyDocument extends Document {
     return (
       <Html>
         <Head />
-        <body className="bg-dot">
+        <body className="bg-black">
           <Main />
           <NextScript />
         </body>

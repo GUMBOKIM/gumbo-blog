@@ -5,10 +5,32 @@
 @layer components {
     .bg-dot {
         background: url('data:image/svg+xml,\
-   <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"         fill-opacity=".25" >\
-            <rect x="200" width="200" height="200" />\
-            <rect y="200" width="200" height="200" />\
+            <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" fill-opacity=".25" >\
+                <rect x="200" width="200" height="200" />\
+                <rect y="200" width="200" height="200" />\
             </svg>') repeat #ccc;
         background-size: 2px 2px;
     }
+
+    .font-chicago {
+        font-family: ChicagoFLF;
+    }
+
+    .window {
+        @apply border-t-2;
+        @apply border-l-2;
+        @apply border-b-4;
+        @apply border-r-4;
+        @apply border-black;
+        @apply bg-white;
+    }
+
+}
+
+
+@font-face {
+    font-family: 'ChicagoFLF';
+    src: url('/font/ChicagoFLF.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
 }
