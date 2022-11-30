@@ -1,12 +1,23 @@
 import WindowDiv from "@components/window/WindowDiv";
 import Folder from "@components/doc/Folder";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 interface ResDocumentData {
   id: number;
   title: string;
   createdAt: Date;
   content: string;
+  rel?: {
+    prev?: {
+      id: number;
+      title: string;
+    };
+    next?: {
+      id: number;
+      title: string;
+    };
+  };
 }
 
 const ResDocumentData: ResDocumentData = {
@@ -15,6 +26,16 @@ const ResDocumentData: ResDocumentData = {
   createdAt: new Date(),
   content:
     "<h1>안녕하세요<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /></h1>",
+  rel: {
+    prev: {
+      id: 10,
+      title: "이전글",
+    },
+    next: {
+      id: 12,
+      title: "이전글",
+    },
+  },
 };
 
 function Document() {
@@ -32,6 +53,25 @@ function Document() {
         </span>
         <hr className="border-b-1 border-black my-3" />
         <main dangerouslySetInnerHTML={{ __html: ResDocumentData.content }} />
+        <hr className="border-b-1 border-black my-3" />
+        {ResDocumentData.rel && (
+          <div className="flex flex-col my-1 gap-y-2">
+            {ResDocumentData.rel.prev && (
+              <Link href={`/doc/${ResDocumentData.rel.prev}`} rel="prev">
+                위로가는 아이콘 - 이전글
+              </Link>
+            )}
+            {ResDocumentData.rel.next && (
+              <Link
+                href={`/doc/${ResDocumentData.rel.next}`}
+                rel="next"
+                className=""
+              >
+                아래로가는 아이콘 - 다음글
+              </Link>
+            )}
+          </div>
+        )}
       </WindowDiv>
     </>
   );

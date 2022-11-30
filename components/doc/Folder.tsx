@@ -70,7 +70,7 @@ export default function Folder({ openDocumentId }: FolderListProps) {
 
   return (
     <WindowDiv title="list" className="w-72 h-fit md:hidden">
-      <nav className="block gap-1">
+      <nav className="block gap-1 select-none">
         {DocsData.map((folder) => (
           <ul key={folder.id} className="flex flex-col gap-1">
             <button

@@ -43,6 +43,7 @@
         @apply inline-block;
         @apply text-sm;
         @apply px-1;
+        @apply select-none;
     }
 
     .window-fake-btn {
