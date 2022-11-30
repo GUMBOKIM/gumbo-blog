@@ -17,7 +17,7 @@ export default function WindowDiv({
         <div className="window-title">{title}</div>
         <div className="window-fake-btn" />
       </div>
-      <div className="w-full p-2">{children}</div>
+      <div className="relative flex flex-col flex-1 p-2">{children}</div>
     </div>
   );
 }
