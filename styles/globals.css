@@ -1,3 +1,71 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .bg-dot {
+        background: url('data:image/svg+xml,\
+            <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" fill-opacity=".25" >\
+                <rect x="200" width="200" height="200" />\
+                <rect y="200" width="200" height="200" />\
+            </svg>') repeat #ccc;
+        background-size: 2px 2px;
+    }
+
+    .font-chicago {
+        font-family: ChicagoFLF;
+    }
+
+    .window {
+        @apply border-t-2;
+        @apply border-l-2;
+        @apply border-b-4;
+        @apply border-r-4;
+        @apply border-black;
+        @apply bg-white;
+    }
+
+    .window-header {
+        @apply relative;
+        @apply h-6;
+        @apply border-black;
+        @apply border-b-2;
+        @apply flex;
+        @apply items-center;
+        @apply justify-center;
+        background: repeating-linear-gradient(to bottom, transparent, transparent 2px, black 2px, black 4px);
+    }
+
+    .window-title {
+        @apply font-chicago;
+        @apply bg-white;
+        @apply inline-block;
+        @apply text-sm;
+        @apply px-1;
+    }
+
+    .window-fake-btn {
+        @apply absolute;
+        @apply w-5;
+        @apply h-5;
+        @apply left-2;
+        @apply border-black;
+        @apply border-2;
+        @apply bg-white;
+    }
+
+    .relative-center {
+        @apply top-1/2;
+        @apply left-1/2;
+        @apply -translate-y-1/2;
+        @apply -translate-x-1/2;
+    }
+}
+
+
+@font-face {
+    font-family: 'ChicagoFLF';
+    src: url('/font/ChicagoFLF.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
