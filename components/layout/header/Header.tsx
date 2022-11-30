@@ -6,6 +6,32 @@ import { useRouter } from "next/router";
 
 const MenuList = ["home", "about", "post", "doc", "clip", "resume"];
 
+function NavMenu({ menuName, nowPath }: { menuName: string; nowPath: string }) {
+  if (menuName === "resume") {
+    return (
+      <a
+        className="text-center hover:text-gray-700 text-gray-500"
+        href="https://resume.gumbo.kr"
+        target="_blank"
+        rel="bookmark noreferrer"
+      >
+        {menuName}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      className={`text-center hover:text-gray-700 ${
+        nowPath.includes(menuName) ? "text-gray-900" : "text-gray-500"
+      }`}
+      href={`/${menuName}`}
+    >
+      {menuName}
+    </Link>
+  );
+}
+
 export default function Header() {
   const router = useRouter();
   const nowPath = router.asPath;
@@ -20,15 +46,7 @@ export default function Header() {
       {/*일반 메뉴*/}
       <nav className="flex gap-x-3 text-sm 2sm:hidden">
         {MenuList.map((menu) => (
-          <Link
-            key={menu}
-            className={`text-center hover:text-gray-700 ${
-              nowPath.includes(menu) ? "text-gray-900" : "text-gray-500"
-            }`}
-            href={`/${menu}`}
-          >
-            {menu}
-          </Link>
+          <NavMenu key={menu} menuName={menu} nowPath={nowPath} />
         ))}
       </nav>
       {/*화면 작을때 메뉴 버튼*/}
@@ -48,16 +66,7 @@ export default function Header() {
           }`}
         >
           {MenuList.map((menu) => (
-            <Link
-              key={menu}
-              className={`text-center hover:text-gray-700 ${
-                nowPath.includes(menu) ? "text-gray-900" : "text-gray-500"
-              }`}
-              onClick={() => setIsNavOpen(false)}
-              href={`/${menu}`}
-            >
-              {menu}
-            </Link>
+            <NavMenu key={menu} menuName={menu} nowPath={nowPath} />
           ))}
         </nav>
       </div>
