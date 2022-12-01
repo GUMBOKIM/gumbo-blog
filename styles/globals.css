@@ -17,6 +17,7 @@
     }
 
     .window {
+        @apply relative;
         @apply border-t-2;
         @apply border-l-2;
         @apply border-b-4;
@@ -42,6 +43,7 @@
         @apply inline-block;
         @apply text-sm;
         @apply px-1;
+        @apply select-none;
     }
 
     .window-fake-btn {
@@ -62,10 +64,17 @@
     }
 }
 
-
 @font-face {
     font-family: 'ChicagoFLF';
     src: url('/font/ChicagoFLF.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
+}
+
+body {
+    -ms-overflow-style: none;
+}
+
+::-webkit-scrollbar {
+    display: none;
 }

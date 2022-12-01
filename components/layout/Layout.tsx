@@ -8,9 +8,11 @@ type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <section className="w-screen min-h-screen flex flex-col rounded-2xl border-b-2 border-black bg-dot">
+    <section className="relative w-screen min-h-screen flex flex-col rounded-2xl border-b-2 border-black bg-dot">
       <Header />
-      <main className="relative flex-1 self-stretch p-2">{children}</main>
+      <main className="flex-1 relative w-full h-full max-w-7xl mx-auto p-2 flex gap-2">
+        {children}
+      </main>
       <Footer />
     </section>
   );

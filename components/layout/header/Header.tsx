@@ -39,38 +39,42 @@ export default function Header() {
   const [isNavOpen, setIsNavOpen] = useState<boolean>(false);
 
   return (
-    <header className="w-full h-8 px-5 flex items-center gap-x-5 bg-white rounded-t-2xl border-b-2 border-black font-chicago">
-      <Link className="h-6 aspect-[10/3]" href="/">
-        <HomeLogo />
-      </Link>
-      {/*일반 메뉴*/}
-      <nav className="flex gap-x-3 text-sm 2sm:hidden">
-        {MenuList.map((menu) => (
-          <NavMenu key={menu} menuName={menu} nowPath={nowPath} />
-        ))}
-      </nav>
-      {/*화면 작을때 메뉴 버튼*/}
-      <div className="ml-auto hidden 2sm:block z-10">
-        <button
-          className={`relative w-5 h-5 p-0 m-0 text-sm border-2 ${
-            isNavOpen ? "border-transparent" : "border-black"
-          }`}
-          onClick={() => setIsNavOpen(!isNavOpen)}
-          type="button"
-        >
-          -
-        </button>
-        <nav
-          className={`absolute top-7 right-2 p-2 flex flex-col gap-y-2 window ${
-            isNavOpen ? "block" : "hidden"
-          }`}
-        >
+    <>
+      <div className="w-full h-8 bg-transparent" />
+      <div className="fixed w-full h-8 bg-black" />
+      <header className="fixed w-full h-8 px-5 flex items-center gap-x-5 bg-white rounded-t-2xl border-b-2 border-black z-50 font-chicago">
+        <Link className="h-6 aspect-[10/3]" href="/">
+          <HomeLogo />
+        </Link>
+        {/*일반 메뉴*/}
+        <nav className="flex gap-x-3 text-sm 2sm:hidden">
           {MenuList.map((menu) => (
             <NavMenu key={menu} menuName={menu} nowPath={nowPath} />
           ))}
         </nav>
-      </div>
-      <Watch />
-    </header>
+        {/*화면 작을때 메뉴 버튼*/}
+        <div className="ml-auto hidden 2sm:block z-10">
+          <button
+            className={`relative w-5 h-5 p-0 m-0 text-sm border-2 ${
+              isNavOpen ? "border-transparent" : "border-black"
+            }`}
+            onClick={() => setIsNavOpen(!isNavOpen)}
+            type="button"
+          >
+            -
+          </button>
+          <nav
+            className={`absolute top-7 right-2 p-2 flex flex-col gap-y-2 window ${
+              isNavOpen ? "block" : "hidden"
+            }`}
+          >
+            {MenuList.map((menu) => (
+              <NavMenu key={menu} menuName={menu} nowPath={nowPath} />
+            ))}
+          </nav>
+        </div>
+        <Watch />
+      </header>
+    </>
   );
 }

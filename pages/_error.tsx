@@ -13,7 +13,7 @@ function Error({ statusCode }: ErrorProps) {
       <Link href="/home">
         <img
           className="w-8 h-8 m-auto"
-          src="/error/error.png"
+          src="/icon/mac/error.png"
           alt="error icon"
         />
       </Link>
