@@ -5,15 +5,11 @@ import Link from "next/link";
 
 function Error({ statusCode }: ErrorProps) {
   return (
-    <WindowDiv
-      title={`${statusCode} Error`}
-      className="fixed relative-center w-72 h-40"
-    >
-      <div className="h-8" />
+    <WindowDiv title={`${statusCode} Error`} className="w-72 h-40">
       <Link href="/home">
         <img
-          className="w-8 h-8 m-auto"
-          src="/icon/mac/error.png"
+          className="w-8 h-8 mb-5"
+          src="/icon/mac/system_dead.png"
           alt="error icon"
         />
       </Link>

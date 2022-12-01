@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "@components/layout/header/Header";
 import Footer from "@components/layout/footer/Footer";
+import Body from "@components/layout/body/Body";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -8,11 +9,9 @@ type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <section className="relative w-screen min-h-screen flex flex-col rounded-2xl border-b-2 border-black bg-dot">
+    <section className="relative w-screen h-screen flex flex-col rounded-2xl border-b-2 bg-dot">
       <Header />
-      <main className="flex-1 relative w-full h-full max-w-7xl mx-auto p-2 flex gap-2">
-        {children}
-      </main>
+      <Body>{children}</Body>
       <Footer />
     </section>
   );

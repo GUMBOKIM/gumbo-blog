@@ -1,5 +1,5 @@
 import WindowDiv from "@components/window/WindowDiv";
-import Folder from "@components/doc/Folder";
+import Folder from "@components/doc/FolderWindow";
 import { useRouter } from "next/router";
 import Link from "next/link";
 
@@ -42,9 +42,9 @@ function Document() {
   const router = useRouter();
 
   return (
-    <>
+    <div className="relative flex w-full max-w-7xl mx-auto justify-between items-start">
       <Folder openDocumentId={Number(router.query.documentId)} />
-      <WindowDiv title="document" className="w-full max-w-7xl sm:w-full">
+      <WindowDiv title="document" className="w-8/12 ml-auto h-fit sm:w-full">
         <h1 className="text-center text-xl my-2 sm:text-base">
           {ResDocumentData.title}
         </h1>
@@ -73,7 +73,7 @@ function Document() {
           </div>
         )}
       </WindowDiv>
-    </>
+    </div>
   );
 }
 

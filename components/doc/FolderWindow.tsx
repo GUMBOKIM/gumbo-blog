@@ -2,10 +2,15 @@ import WindowDiv from "@components/window/WindowDiv";
 import Link from "next/link";
 import { useState } from "react";
 
-interface Folder {
+interface GlobalFolder {
+  folders: FolderWindow[];
+}
+
+interface FolderWindow {
   id: number;
   title: string;
-  documents: Document[];
+  folders?: FolderWindow[];
+  documents?: Document[];
 }
 
 interface Document {
@@ -13,7 +18,122 @@ interface Document {
   title: string;
 }
 
-const DocsData: Folder[] = [
+interface FolderListProps {
+  openDocumentId?: number;
+}
+
+const DocsData: FolderWindow[] = [
+  {
+    id: 1,
+    title: "javascript",
+    documents: [
+      {
+        id: 1,
+        title:
+          "클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져",
+      },
+      {
+        id: 2,
+        title: "함수",
+      },
+      {
+        id: 3,
+        title: "자료형",
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: "typescript",
+    documents: [
+      {
+        id: 4,
+        title: "클로져",
+      },
+      {
+        id: 5,
+        title: "함수",
+      },
+      {
+        id: 6,
+        title: "자료형",
+      },
+    ],
+  },
+  {
+    id: 1,
+    title: "javascript",
+    documents: [
+      {
+        id: 1,
+        title:
+          "클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져",
+      },
+      {
+        id: 2,
+        title: "함수",
+      },
+      {
+        id: 3,
+        title: "자료형",
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: "typescript",
+    documents: [
+      {
+        id: 4,
+        title: "클로져",
+      },
+      {
+        id: 5,
+        title: "함수",
+      },
+      {
+        id: 6,
+        title: "자료형",
+      },
+    ],
+  },
+  {
+    id: 1,
+    title: "javascript",
+    documents: [
+      {
+        id: 1,
+        title:
+          "클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져",
+      },
+      {
+        id: 2,
+        title: "함수",
+      },
+      {
+        id: 3,
+        title: "자료형",
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: "typescript",
+    documents: [
+      {
+        id: 4,
+        title: "클로져",
+      },
+      {
+        id: 5,
+        title: "함수",
+      },
+      {
+        id: 6,
+        title: "자료형",
+      },
+    ],
+  },
   {
     id: 1,
     title: "javascript",
@@ -53,11 +173,7 @@ const DocsData: Folder[] = [
   },
 ];
 
-interface FolderListProps {
-  openDocumentId?: number;
-}
-
-export default function Folder({ openDocumentId }: FolderListProps) {
+export default function FolderWindow({ openDocumentId }: FolderListProps) {
   const [openFolders, setOpenFolders] = useState<number[]>([]);
 
   const handleClickFolder = (folderId: number) => {
@@ -69,8 +185,8 @@ export default function Folder({ openDocumentId }: FolderListProps) {
   };
 
   return (
-    <WindowDiv title="list" className="w-72 h-fit md:hidden">
-      <nav className="block gap-1 select-none">
+    <WindowDiv title="folder" className="w-20 h-fit md:hidden ">
+      <nav className="flex flex-col w-full mb-auto gap-1 select-none">
         {DocsData.map((folder) => (
           <ul key={folder.id} className="flex flex-col gap-1">
             <button
@@ -91,7 +207,7 @@ export default function Folder({ openDocumentId }: FolderListProps) {
                 openFolders?.includes(folder.id) ? "block" : "hidden"
               }`}
             >
-              {folder.documents.map((document) => (
+              {folder.documents?.map((document) => (
                 <li key={document.id}>
                   <Link
                     href={`/doc/${document.id}`}
