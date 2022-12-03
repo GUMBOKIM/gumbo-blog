@@ -24,7 +24,7 @@
         @apply border-r-4;
         @apply border-black;
         @apply bg-white;
-        @apply min-w-[20rem];
+        @apply min-w-[15rem];
         @apply min-h-[15rem];
     }
 
@@ -60,7 +60,7 @@
 
     .window-content {
         @apply relative;
-        @apply min-w-[20rem];
+        @apply min-w-[15rem];
         @apply min-h-[13.5rem];
         @apply p-2;
         @apply flex;

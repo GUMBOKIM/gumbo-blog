@@ -80,12 +80,14 @@ export default function RecentWindow() {
   ];
 
   return (
-    <WindowDiv title="recent" className="w-full md:w-full">
-      <div className="relative flex flex-col w-full p-3 max-w-96 max-auto">
-        {RecentDocuments.map((recentDocument) => (
-          <RecentDocument key={recentDocument.id} {...recentDocument} />
-        ))}
-      </div>
-    </WindowDiv>
+    <section className="relative w-full max-w-4xl max-h-full overflow-scroll py-2">
+      <WindowDiv title="recent" className="w-full">
+        <div className="relative flex flex-col w-full p-3 max-w-96 max-auto">
+          {RecentDocuments.map((recentDocument) => (
+            <RecentDocument key={recentDocument.id} {...recentDocument} />
+          ))}
+        </div>
+      </WindowDiv>
+    </section>
   );
 }

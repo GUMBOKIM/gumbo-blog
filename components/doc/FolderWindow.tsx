@@ -185,53 +185,55 @@ export default function FolderWindow({ openDocumentId }: FolderListProps) {
   };
 
   return (
-    <WindowDiv title="folder" className="w-20 h-fit md:hidden ">
-      <nav className="flex flex-col w-full mb-auto gap-1 select-none">
-        {DocsData.map((folder) => (
-          <ul key={folder.id} className="flex flex-col gap-1">
-            <button
-              className="flex items-center"
-              type="button"
-              onClick={() => handleClickFolder(folder.id)}
-            >
-              <img
-                src="/icon/mac/folder.png"
-                alt={`${folder.title} folder`}
-                className="h-4 mr-2"
-              />
-              <span>{folder.title}</span>
-            </button>
-            <ol
-              key={folder.id}
-              className={`text-sm flex flex-col gap-1 ml-4 ${
-                openFolders?.includes(folder.id) ? "block" : "hidden"
-              }`}
-            >
-              {folder.documents?.map((document) => (
-                <li key={document.id}>
-                  <Link
-                    href={`/doc/${document.id}`}
-                    className="flex items-start"
-                  >
-                    <img
-                      src="/icon/mac/file.png"
-                      alt={`${folder.title} folder`}
-                      className="h-4 mr-2"
-                    />
-                    <span
-                      className={`text-gray-500 hover:text-gray-700  ${
-                        document.id === openDocumentId && "text-black"
-                      }`}
+    <section className="relative w-full max-w-xs max-h-full overflow-scroll py-2 lg:hidden">
+      <WindowDiv title="folder" className="w-full h-fit">
+        <nav className="flex flex-col w-full mb-auto gap-1 select-none">
+          {DocsData.map((folder) => (
+            <ul key={folder.id} className="flex flex-col gap-1">
+              <button
+                className="flex items-center"
+                type="button"
+                onClick={() => handleClickFolder(folder.id)}
+              >
+                <img
+                  src="/icon/mac/folder.png"
+                  alt={`${folder.title} folder`}
+                  className="h-4 mr-2"
+                />
+                <span>{folder.title}</span>
+              </button>
+              <ol
+                key={folder.id}
+                className={`text-sm flex flex-col gap-1 ml-4 ${
+                  openFolders?.includes(folder.id) ? "block" : "hidden"
+                }`}
+              >
+                {folder.documents?.map((document) => (
+                  <li key={document.id}>
+                    <Link
+                      href={`/doc/${document.id}`}
+                      className="flex items-start"
                     >
-                      {document.title}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </ul>
-        ))}
-      </nav>
-    </WindowDiv>
+                      <img
+                        src="/icon/mac/file.png"
+                        alt={`${folder.title} folder`}
+                        className="h-4 mr-2"
+                      />
+                      <span
+                        className={`text-gray-500 hover:text-gray-700  ${
+                          document.id === openDocumentId && "text-black"
+                        }`}
+                      >
+                        {document.title}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </ul>
+          ))}
+        </nav>
+      </WindowDiv>
+    </section>
   );
 }
