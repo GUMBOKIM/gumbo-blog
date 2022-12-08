@@ -2,7 +2,7 @@ import WindowDiv from "@components/window/WindowDiv";
 
 function About() {
   return (
-    <WindowDiv title="about" className="w-80">
+    <WindowDiv title="about" className="w-80 h-fit">
       <img src="/about/profile.png" className="mx-auto my-6" alt="profile" />
       <p className="text-center mb-5">
         개발이 즐겁다!

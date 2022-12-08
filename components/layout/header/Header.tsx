@@ -63,7 +63,7 @@ export default function Header() {
             -
           </button>
           <nav
-            className={`absolute top-7 right-2 p-2 flex flex-col gap-y-2 window ${
+            className={`absolute top-7 right-2  w-28 p-2 bg-white border-black border-2 flex flex-col gap-y-2  ${
               isNavOpen ? "block" : "hidden"
             }`}
           >

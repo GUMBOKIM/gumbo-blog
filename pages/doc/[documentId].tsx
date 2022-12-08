@@ -6,10 +6,10 @@ function Document() {
   const router = useRouter();
 
   return (
-    <>
+    <div className="relative flex h-full w-full max-w-7xl justify-around gap-2">
       <Folder openDocumentId={Number(router.query.documentId)} />
       <DocumentWindow />
-    </>
+    </div>
   );
 }
 
