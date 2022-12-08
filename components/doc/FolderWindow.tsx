@@ -1,146 +1,169 @@
 import WindowDiv from "@components/window/WindowDiv";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/router";
 
-interface FolderWindow {
+interface DocumentFile {
   id: number;
-  title: string;
-  folders?: FolderWindow[];
-  documents?: Document[];
+  name: string;
+  order: number;
+  type: "folder" | "document";
+  children?: DocumentFile[];
 }
 
-interface Document {
-  id: number;
-  title: string;
-}
-
-interface FolderListProps {
-  openDocumentId?: number;
-}
-
-const DocsData: FolderWindow[] = [
+const DocumentFilesData: DocumentFile[] = [
   {
     id: 1,
-    title: "javascript",
-    folders: [],
-    documents: [
-      {
-        id: 1,
-        title:
-          "클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져 클로져",
-      },
+    name: "javascript",
+    order: 1,
+    type: "folder",
+    children: [
       {
         id: 2,
-        title: "함수",
+        name: "basic",
+        order: 1,
+        type: "folder",
+        children: [
+          {
+            id: 3,
+            name: "자료형",
+            order: 1,
+            type: "document",
+          },
+          {
+            id: 4,
+            name: "연산자",
+            order: 2,
+            type: "document",
+          },
+        ],
       },
       {
-        id: 3,
-        title: "자료형",
+        id: 5,
+        name: "클로져",
+        order: 2,
+        type: "document",
+      },
+      {
+        id: 6,
+        name: "콘텍스트",
+        order: 3,
+        type: "document",
       },
     ],
   },
   {
-    id: 2,
-    title: "typescript",
-    documents: [
+    id: 5,
+    name: "typescript",
+    order: 2,
+    type: "folder",
+    children: [
       {
-        id: 4,
-        title: "클로져",
+        id: 7,
+        name: "basic",
+        order: 1,
+        type: "folder",
+        children: [
+          {
+            id: 8,
+            name: "슈퍼셋",
+            order: 1,
+            type: "document",
+          },
+          {
+            id: 9,
+            name: "모르겟다",
+            order: 2,
+            type: "document",
+          },
+        ],
       },
       {
-        id: 5,
-        title: "함수",
+        id: 10,
+        name: "뭘까",
+        order: 2,
+        type: "document",
       },
       {
-        id: 6,
-        title: "자료형",
+        id: 11,
+        name: "진짜 모름",
+        order: 3,
+        type: "document",
       },
     ],
   },
 ];
 
-export default function FolderWindow({ openDocumentId }: FolderListProps) {
-  const [openFolders, setOpenFolders] = useState<number[]>([]);
+interface DocumentProps {
+  level?: number;
+  openDocumentId?: number;
+  file: DocumentFile;
+}
 
-  const handleClickFolder = (folderId: number) => {
-    if (openFolders?.includes(folderId)) {
-      setOpenFolders((before) => before.filter((nowId) => nowId !== folderId));
-    } else {
-      setOpenFolders((before) => [...before, folderId]);
-    }
-  };
+function Document({ level = 0, openDocumentId, file }: DocumentProps) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (file.type === "folder") {
+    return (
+      <>
+        <button
+          type="button"
+          className={`flex ml-3 items-center ${!isOpen && "underline"}`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <img
+            src={`/icon/mac/${level === 0 ? "global_folder" : "folder"}.png`}
+            alt={`${file.name} folder`}
+            className="h-4 mr-2"
+          />
+          <span>{file.name}</span>
+        </button>
+        <div className="flex-col ml-3">
+          {isOpen &&
+            file.children?.map((child) => (
+              <Document
+                key={child.id}
+                openDocumentId={openDocumentId}
+                level={level + 1}
+                file={child}
+              />
+            ))}
+        </div>
+      </>
+    );
+  }
 
   return (
-    <>
-      <section className="relative w-full max-w-xs max-h-full overflow-scroll py-2 lg:hidden">
-        <WindowDiv title="folder" className="w-full h-fit">
-          <nav className="flex flex-col w-full mb-auto gap-1 select-none">
-            {DocsData.map((folder) => (
-              <ul key={folder.id} className="flex flex-col gap-1">
-                <button
-                  className="flex items-center"
-                  type="button"
-                  onClick={() => handleClickFolder(folder.id)}
-                >
-                  <img
-                    src="/icon/mac/folder.png"
-                    alt={`${folder.title} folder`}
-                    className="h-4 mr-2"
-                  />
-                  <span>{folder.title}</span>
-                </button>
-                <ol
-                  key={folder.id}
-                  className={`text-sm flex flex-col gap-1 ml-4 ${
-                    openFolders?.includes(folder.id) ? "block" : "hidden"
-                  }`}
-                >
-                  {folder.documents?.map((document) => (
-                    <li key={document.id}>
-                      <Link
-                        href={`/doc/${document.id}`}
-                        className="flex items-start"
-                      >
-                        <img
-                          src="/icon/mac/file.png"
-                          alt={`${folder.title} folder`}
-                          className="h-4 mr-2"
-                        />
-                        <span
-                          className={`text-black hover:text-gray-700  ${
-                            document.id === openDocumentId && "font-bold"
-                          }`}
-                        >
-                          {document.title}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </ul>
-            ))}
-          </nav>
-        </WindowDiv>
-      </section>
-      {/*<section className="fixed right-0 w-full bottom-0 p-4 hidden lg:flex z-50 flex-col-reverse items-end gap-y-2">*/}
-      {/*  <button*/}
-      {/*    type="button"*/}
-      {/*    className="border-2 border-black w-6 h-6 bg-white p-0 flex items-center justify-center"*/}
-      {/*  >*/}
-      {/*    =*/}
-      {/*  </button>*/}
-      {/*  <div className="max-h-full w-full border-black border-2 bg-white">*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span>*/}
-      {/*    <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span>*/}
-      {/*    <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span> <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span> <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span> <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span> <br />*/}
-      {/*    <span>asdasdasdasdasdasdasdasdasdasdasd</span>*/}
-      {/*  </div>*/}
-      {/*</section>*/}
-    </>
+    <Link href={`/doc/${file.id}`} className="flex ml-3 items-center">
+      <img
+        src="/icon/mac/file.png"
+        alt={`${file.name} file`}
+        className="h-4 mr-2"
+      />
+      <span className={openDocumentId === file.id ? "font-bold" : ""}>
+        {file.name}
+      </span>
+    </Link>
+  );
+}
+
+export default function FolderWindow() {
+  const { query } = useRouter();
+  const documentId = Number(query.documentId);
+
+  return (
+    <section className="relative w-full max-w-xs max-h-full overflow-scroll py-2 lg:hidden">
+      <WindowDiv title="folder" className="w-full h-fit">
+        <nav className="flex flex-col w-full mb-auto select-none">
+          {DocumentFilesData.map((documentFile) => (
+            <Document
+              key={documentFile.id}
+              openDocumentId={documentId}
+              file={documentFile}
+            />
+          ))}
+        </nav>
+      </WindowDiv>
+    </section>
   );
 }

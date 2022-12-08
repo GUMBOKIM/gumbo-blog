@@ -1,7 +1,7 @@
 import WindowDiv from "@components/window/WindowDiv";
 import Link from "next/link";
 
-interface ResDocumentData {
+interface DocumentDetail {
   id: number;
   title: string;
   createdAt: Date;
@@ -18,7 +18,7 @@ interface ResDocumentData {
   };
 }
 
-const ResDocumentData: ResDocumentData = {
+const ResDocumentData: DocumentDetail = {
   id: 0,
   title: "제목입니다.",
   createdAt: new Date(),
@@ -35,6 +35,141 @@ const ResDocumentData: ResDocumentData = {
     },
   },
 };
+
+interface DocumentComment {
+  id: number;
+  writer: string;
+  createdAt: Date;
+  content: string;
+  child?: DocumentComment[];
+}
+
+const DocumentCommentsData: DocumentComment[] = [
+  {
+    id: 1,
+    writer: "김대희",
+    createdAt: new Date(),
+    content: "안녕하세요!",
+    child: [
+      {
+        id: 2,
+        writer: "김대희",
+        createdAt: new Date(),
+        content: "반갑습니다!",
+      },
+    ],
+  },
+  {
+    id: 3,
+    writer: "김대희",
+    createdAt: new Date(),
+    content: "좋은 정보 감사합니다!",
+    child: [
+      {
+        id: 4,
+        writer: "김대희",
+        createdAt: new Date(),
+        content: "방문해주셔서 감사합니다!",
+      },
+    ],
+  },
+];
+
+interface CommentProps {
+  level?: number;
+  comment: DocumentComment;
+}
+
+function Comment({ level = 0, comment }: CommentProps) {
+  return (
+    <>
+      <div className="w-full p-2 mt-2 flex flex-col gap-y-2 border-2 border-black">
+        <div className="flex justify-between flex-wrap">
+          <span>{comment.writer}</span>
+          <span className="ml-auto">{comment.createdAt.toDateString()}</span>
+        </div>
+        <div>{comment.content}</div>
+      </div>
+      {comment.child && (
+        <div className="relative flex w-full flex-col pl-2">
+          {comment.child.map((childComment) => (
+            <Comment
+              key={childComment.id}
+              level={level + 1}
+              comment={childComment}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function CommentWrite() {
+  return (
+    <form className="w-full p-3 mt-2 flex flex-col gap-y-2 border-2 border-black">
+      <div className="w-full flex gap-4 flex-wrap">
+        <label className="flex gap-3" htmlFor="name">
+          <span>이름</span>
+          <input
+            className="px-1 outline-0 border-2 border-black w-20"
+            type="text"
+          />
+        </label>
+        <label className="flex gap-x-2" htmlFor="password">
+          <span>암호</span>
+          <input
+            className="px-1 outline-0 border-2 border-black w-20"
+            type="password"
+            autoComplete="none"
+            id="password"
+          />
+        </label>
+      </div>
+      <textarea
+        placeholder="댓글을 입력해주세요"
+        className="w-full p-2 outline-0 h-fit border-2 border-black"
+      />
+      <button type="submit" className="ml-auto w-10 border-2 border-black">
+        작성
+      </button>
+    </form>
+  );
+}
+
+interface PrevNextDocumentProps {
+  prev?: {
+    id: number;
+    title: string;
+  };
+  next?: {
+    id: number;
+    title: string;
+  };
+}
+
+function PrevNextDocument({ prev, next }: PrevNextDocumentProps) {
+  return (
+    <div className="w-full px-2 my-1 flex justify-between gap-x-2">
+      {prev ? (
+        <Link href={`/doc/${prev.id}`} rel="prev">
+          {"〈 "}
+          {prev.title}
+        </Link>
+      ) : (
+        <div>처음 글 입니다.</div>
+      )}
+      {next ? (
+        <Link href={`/doc/${next.id}`} rel="next" className="">
+          {next.title}
+          {" 〉"}
+        </Link>
+      ) : (
+        <div>마지막 글 입니다.</div>
+      )}
+    </div>
+  );
+}
 
 export default function DocumentWindow() {
   return (
@@ -56,92 +191,14 @@ export default function DocumentWindow() {
         {/*hr*/}
         <div className="w-full h-0.5 bg-black" />
         {/*댓글*/}
-        <div className="w-full px-3 py-4 flex flex-col gap-y-2">
-          <div className="w-full p-2 flex flex-col gap-y-2 border-2 border-black">
-            <div className="flex justify-between flex-wrap">
-              <span>김대희김대희김대희</span>
-              <span className="ml-auto">{new Date().toDateString()}</span>
-            </div>
-            <div>댓글 내용입니다.</div>
-          </div>
-          <div className="w-full p-2 flex flex-col gap-y-2 border-2 border-black">
-            <div className="flex justify-between flex-wrap">
-              <span>김대희김대희김대희</span>
-              <span className="ml-auto">{new Date().toDateString()}</span>
-            </div>
-            <div>댓글 내용입니다.</div>
-          </div>
-          <div className="w-full p-3 flex flex-col gap-y-2 border-2 border-black">
-            <div className="flex justify-between flex-wrap">
-              <span>김대희김대희김대희</span>
-              <span className="ml-auto">{new Date().toDateString()}</span>
-            </div>
-            <span className="px-1">
-              댓글 내용입니다.댓글 내용입니다.댓글 내용입니다.댓글
-              내용입니다.댓글 내용입니다.댓글 내용입니다. 댓글 내용입니다.댓글
-              내용입니다.댓글 내용입니다.댓글 내용입니다.댓글 내용입니다.댓글
-              내용입니다. 댓글 내용입니다.댓글 내용입니다.댓글 내용입니다.댓글
-              내용입니다.댓글 내용입니다.댓글 내용입니다. 댓글 내용입니다.댓글
-              내용입니다.댓글 내용입니다.댓글 내용입니다.댓글 내용입니다.댓글
-              내용입니다. 댓글 내용입니다.댓글 내용입니다.댓글 내용입니다.댓글
-              내용입니다.댓글 내용입니다.댓글 내용입니다.
-            </span>
-          </div>
-          <div className="w-full p-3 flex flex-col gap-y-2 border-2 border-black">
-            <div className="w-full flex gap-4 flex-wrap">
-              <label className="flex gap-3" htmlFor="name">
-                <span>이름</span>
-                <input
-                  className="px-1 outline-0 border-2 border-black w-20"
-                  type="text"
-                />
-              </label>
-              <label className="flex gap-x-2" htmlFor="password">
-                <span>암호</span>
-                <input
-                  className="px-1 outline-0 border-2 border-black w-20"
-                  type="password"
-                  id="password"
-                />
-              </label>
-            </div>
-            <textarea
-              placeholder="댓글을 입력해주세요"
-              className="w-full p-2 outline-0 h-fit border-2 border-black"
-            />
-            <button
-              type="submit"
-              className="ml-auto w-10 border-2 border-black"
-            >
-              작성
-            </button>
-          </div>
-        </div>
+        {DocumentCommentsData.map((comment) => (
+          <Comment key={comment.id} comment={comment} />
+        ))}
+        <CommentWrite />
         {/*hr*/}
-        <div className="w-full h-0.5 bg-black" />
+        <div className="w-full h-0.5 bg-black my-2" />
         {/*이전 글 다음 글*/}
-        <div className="w-full px-2 my-1 flex justify-between gap-x-2">
-          {ResDocumentData.rel.prev ? (
-            <Link href={`/doc/${ResDocumentData.rel.prev.id}`} rel="prev">
-              {"〈 "}
-              {ResDocumentData.rel.prev.title}
-            </Link>
-          ) : (
-            <div>처음 글 입니다.</div>
-          )}
-          {ResDocumentData.rel.next ? (
-            <Link
-              href={`/doc/${ResDocumentData.rel.next.id}`}
-              rel="next"
-              className=""
-            >
-              {ResDocumentData.rel.next.title}
-              {" 〉"}
-            </Link>
-          ) : (
-            <div>마지막 글 입니다.</div>
-          )}
-        </div>
+        <PrevNextDocument {...ResDocumentData.rel} />
       </WindowDiv>
     </section>
   );

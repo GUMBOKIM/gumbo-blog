@@ -23,9 +23,9 @@ function RecentDocument({
         <span className="w-fit block text-right text-sm font-light mb-3">
           {createdAt.toDateString()}
         </span>
-        <desc className="w-full text-sm">
+        <p className="w-full text-sm">
           <p className="h-20 overflow-hidden whitespace-pre-wrap">{content}</p>
-        </desc>
+        </p>
         <div className="flex flex-row my-5">
           <img
             src="/icon/mac/folder.png"
