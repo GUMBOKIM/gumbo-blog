@@ -42,7 +42,7 @@ export default function Header() {
     <>
       <div className="absolute w-full h-8 bg-black" />
       <header className="absolute w-full h-8 px-5 flex items-center gap-x-5 bg-white rounded-t-2xl border-b-2 border-black z-50 font-chicago">
-        <Link className="h-6 aspect-[10/3]" href="/">
+        <Link className="h-6 aspect-[10/3]" href="/front-end/pages">
           <HomeLogo />
         </Link>
         {/*일반 메뉴*/}
