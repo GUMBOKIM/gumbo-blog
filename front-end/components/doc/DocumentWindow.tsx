@@ -1,5 +1,6 @@
 import WindowDiv from "@components/window/WindowDiv";
 import Link from "next/link";
+import { useState } from "react";
 
 interface DocumentDetail {
   id: number;
@@ -27,13 +28,13 @@ const ResDocumentData: DocumentDetail = {
   rel: {
     prev: {
       id: 10,
-      title: "이것은 이전글 제목입니다.",
+      title: "이것은 이전글 제목입니다."
     },
     next: {
       id: 12,
-      title: "이것은 다음글 제목입니다.",
-    },
-  },
+      title: "이것은 다음글 제목입니다."
+    }
+  }
 };
 
 interface DocumentComment {
@@ -55,9 +56,9 @@ const DocumentCommentsData: DocumentComment[] = [
         id: 2,
         writer: "김대희",
         createdAt: new Date(),
-        content: "반갑습니다!",
-      },
-    ],
+        content: "반갑습니다!"
+      }
+    ]
   },
   {
     id: 3,
@@ -69,10 +70,10 @@ const DocumentCommentsData: DocumentComment[] = [
         id: 4,
         writer: "김대희",
         createdAt: new Date(),
-        content: "방문해주셔서 감사합니다!",
-      },
-    ],
-  },
+        content: "방문해주셔서 감사합니다!"
+      }
+    ]
+  }
 ];
 
 interface CommentProps {
@@ -81,6 +82,10 @@ interface CommentProps {
 }
 
 function Comment({ level = 0, comment }: CommentProps) {
+  console.log("comment");
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
+  const handleClickReplyButton = () => setIsReplyOpen(before => !before);
+
   return (
     <>
       <div className="w-full p-2 mt-2 flex flex-col gap-y-2 border-2 border-black">
@@ -89,6 +94,11 @@ function Comment({ level = 0, comment }: CommentProps) {
           <span className="ml-auto">{comment.createdAt.toDateString()}</span>
         </div>
         <div>{comment.content}</div>
+        {level === 0 && (
+          <button type="button" className="ml-auto px-2 bg-gray-200 border-2 border-black"
+                  onClick={handleClickReplyButton}>답글
+          </button>
+        )}
       </div>
       {comment.child && (
         <div className="relative flex w-full flex-col pl-2">
@@ -99,13 +109,18 @@ function Comment({ level = 0, comment }: CommentProps) {
               comment={childComment}
             />
           ))}
+          {level === 0 && isReplyOpen && <CommentWrite commentId={comment.id} />}
         </div>
       )}
     </>
   );
 }
 
-function CommentWrite() {
+interface CommentWriteProps {
+  commentId?: number;
+}
+
+function CommentWrite({ commentId }: CommentWriteProps) {
   return (
     <form className="w-full p-3 mt-2 flex flex-col gap-y-2 border-2 border-black">
       <div className="w-full flex gap-4 flex-wrap">
@@ -130,7 +145,7 @@ function CommentWrite() {
         placeholder="댓글을 입력해주세요"
         className="w-full p-2 outline-0 h-fit border-2 border-black"
       />
-      <button type="submit" className="ml-auto w-10 border-2 border-black">
+      <button type="submit" className="ml-auto px-2 bg-gray-200 border-2 border-black">
         작성
       </button>
     </form>

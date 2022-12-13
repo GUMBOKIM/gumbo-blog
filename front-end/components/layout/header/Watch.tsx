@@ -12,7 +12,9 @@ export default function Watch() {
 
   return (
     <div className="ml-auto sm:hidden animate-pulse">
-      {time.getHours()}:{time.getMinutes()}
+      {time.getHours() >= 10 ? time.getHours() : `0${time.getHours()}`}
+      :
+      {time.getMinutes() >= 10 ? time.getMinutes() : `0${time.getMinutes()}`}
     </div>
   );
 }
