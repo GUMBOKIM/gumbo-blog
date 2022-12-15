@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Watch from "@components/layout/header/Watch";
 import { useRouter } from "next/router";
 
-// const MenuList = ["about", "post", "doc", "clip", "resume"];
 const MenuList = ["about", "doc", "clip", "resume"];
 
 function NavMenu({ menuName, nowPath }: { menuName: string; nowPath: string }) {

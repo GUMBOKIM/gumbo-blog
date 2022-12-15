@@ -28,29 +28,29 @@ const DocumentFilesData: DocumentFile[] = [
             id: 3,
             name: "자료형",
             order: 1,
-            type: "document",
+            type: "document"
           },
           {
             id: 4,
             name: "연산자",
             order: 2,
-            type: "document",
-          },
-        ],
+            type: "document"
+          }
+        ]
       },
       {
         id: 5,
         name: "클로져",
         order: 2,
-        type: "document",
+        type: "document"
       },
       {
         id: 6,
         name: "콘텍스트",
         order: 3,
-        type: "document",
-      },
-    ],
+        type: "document"
+      }
+    ]
   },
   {
     id: 5,
@@ -68,30 +68,30 @@ const DocumentFilesData: DocumentFile[] = [
             id: 8,
             name: "슈퍼셋",
             order: 1,
-            type: "document",
+            type: "document"
           },
           {
             id: 9,
             name: "모르겟다",
             order: 2,
-            type: "document",
-          },
-        ],
+            type: "document"
+          }
+        ]
       },
       {
         id: 10,
         name: "뭘까",
         order: 2,
-        type: "document",
+        type: "document"
       },
       {
         id: 11,
         name: "진짜 모름",
         order: 3,
-        type: "document",
-      },
-    ],
-  },
+        type: "document"
+      }
+    ]
+  }
 ];
 
 interface DocumentProps {
@@ -150,20 +150,43 @@ function Document({ level = 0, openDocumentId, file }: DocumentProps) {
 export default function FolderWindow() {
   const { query } = useRouter();
   const documentId = Number(query.documentId);
+  const [isFolderOpen, setIsFolderOpen] = useState(false);
 
   return (
-    <section className="relative w-full max-w-xs max-h-full overflow-scroll py-2 lg:hidden">
-      <WindowDiv title="folder" className="w-full h-fit">
-        <nav className="flex flex-col w-full mb-auto select-none">
-          {DocumentFilesData.map((documentFile) => (
-            <Document
-              key={documentFile.id}
-              openDocumentId={documentId}
-              file={documentFile}
-            />
-          ))}
-        </nav>
-      </WindowDiv>
-    </section>
+    <>
+      <section className="relative w-full max-w-xs max-h-full overflow-scroll py-2 visible md:hidden">
+        <WindowDiv title="folder" className="w-full h-fit">
+          <nav className="flex flex-col w-full mb-auto select-none">
+            {DocumentFilesData.map((documentFile) => (
+              <Document
+                key={documentFile.id}
+                openDocumentId={documentId}
+                file={documentFile}
+              />
+            ))}
+          </nav>
+        </WindowDiv>
+      </section>
+      {/*모바일 환경*/}
+      <section className="fixed flex flex-col-reverse items-end bottom-1 right-5 invisible md:visible z-50">
+        <button type="button"
+                className={`bg-white w-14 px-2 m-0 text-sm border-2 border-black ${isFolderOpen ?? "underline"} `}
+                onClick={() => setIsFolderOpen(!isFolderOpen)}>menu
+        </button>
+        {
+          isFolderOpen &&
+          <nav
+            className="flex bg-white border-black border-2 flex-col w-56 max-h-96 p-2 overflow-scroll mb-2 select-none">
+            {DocumentFilesData.map((documentFile) => (
+              <Document
+                key={documentFile.id}
+                openDocumentId={documentId}
+                file={documentFile}
+              />
+            ))}
+          </nav>
+        }
+      </section>
+    </>
   );
 }

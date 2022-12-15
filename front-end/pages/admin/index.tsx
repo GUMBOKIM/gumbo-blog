@@ -1,9 +1,8 @@
 import WindowDiv from "@components/window/WindowDiv";
 
-const isLogin = false;
+const isLogin = true;
 
 function Index() {
-
   if (!isLogin) {
     return (
       <WindowDiv title="login">
@@ -23,7 +22,12 @@ function Index() {
   }
 
   return (
-    <WindowDiv title="menu" />
+    <WindowDiv title="admin" className="m-4 w-full h-full">
+      <div className="w-full h-full flex">
+        <div>asdf</div>
+        <div>asd</div>
+      </div>
+    </WindowDiv>
   );
 }
 
