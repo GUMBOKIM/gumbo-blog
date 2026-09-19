@@ -1,0 +1,64 @@
+---
+import { Font } from 'astro:assets';
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+import { SITE_TITLE, ui, localize, otherLocale, switchLocale, type Locale } from '../i18n';
+
+interface Props {
+	locale: Locale;
+	title?: string;
+	description?: string;
+	/** Path of this page in the other locale, when it differs from the default mapping */
+	alternate?: string;
+}
+
+const { locale, title, description = ui[locale].description } = Astro.props;
+const other = otherLocale(locale);
+const alternate = Astro.props.alternate ?? switchLocale(Astro.url.pathname, other);
+const introPath = localize(locale, '/intro');
+const blogPath = localize(locale, '/blog');
+const current = Astro.url.pathname.replace(/(?<=.)\/$/, '');
+const isIntro = current === introPath;
+const isBlog = current === blogPath || current.startsWith(`${blogPath}/`);
+const pageTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<html lang={locale}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href={canonical} />
+		<link rel="alternate" hreflang={other} href={new URL(alternate, Astro.site)} />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<title>{pageTitle}</title>
+		<meta name="description" content={description} />
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<Font cssVariable="--font-serif" preload={[{ weight: '400', style: 'normal' }]} />
+		<Font cssVariable="--font-serif-kr" />
+		<Font cssVariable="--font-sans" preload={[{ weight: '700' }]} />
+		<Font cssVariable="--font-mono" preload={[{ weight: '400' }]} />
+		<ClientRouter />
+	</head>
+	<body>
+		<main class="w">
+			<header class="site-header">
+				<nav class="menu">
+					<a href={localize(locale, '/')} class="logo">{SITE_TITLE}</a>
+					<a href={introPath} data-label="intro" aria-current={isIntro ? 'page' : undefined}>intro</a>
+					<a href={blogPath} data-label="blog" aria-current={isBlog ? 'page' : undefined}>blog</a>
+				</nav>
+				<nav class="lang">
+					<a href={alternate} lang={other}>{ui[locale].other}</a>
+				</nav>
+			</header>
+			<slot />
+		</main>
+		<footer>
+			© {new Date().getFullYear()} {SITE_TITLE}
+		</footer>
+	</body>
+</html>

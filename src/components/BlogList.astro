@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import CategoryTabs from './CategoryTabs.astro';
+import PostsByYear from './PostsByYear.astro';
+import { getPosts, ui, type Category, type Locale } from '../i18n';
+
+interface Props {
+	locale: Locale;
+	category?: Category;
+}
+
+const { locale, category } = Astro.props;
+const posts = await getPosts(locale, category);
+---
+
+<Base locale={locale} title={category ? `blog · ${ui[locale][category]}` : 'blog'}>
+	<h1 class="post-title">blog</h1>
+	<CategoryTabs locale={locale} active={category ?? 'all'} />
+	<PostsByYear locale={locale} posts={posts} />
+</Base>

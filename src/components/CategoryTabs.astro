@@ -1,0 +1,28 @@
+---
+import { CATEGORIES, localize, ui, type Category, type Locale } from '../i18n';
+
+interface Props {
+	locale: Locale;
+	active: Category | 'all';
+}
+
+const { locale, active } = Astro.props;
+const t = ui[locale];
+const tabs = [
+	{ key: 'all', label: t.all, href: localize(locale, '/blog') },
+	...CATEGORIES.map((c) => ({ key: c, label: t[c], href: localize(locale, `/blog/${c}`) })),
+];
+---
+
+<nav class="tabs">
+	{
+		tabs.map((tab, i) => (
+			<>
+				{i > 0 && <span class="sep">|</span>}
+				<a href={tab.href} data-label={tab.label} aria-current={tab.key === active ? 'page' : undefined}>
+					{tab.label}
+				</a>
+			</>
+		))
+	}
+</nav>

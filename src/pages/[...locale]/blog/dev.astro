@@ -1,0 +1,8 @@
+---
+import BlogList from '../../../components/BlogList.astro';
+import { localePaths, toLocale } from '../../../i18n';
+
+export const getStaticPaths = localePaths;
+---
+
+<BlogList locale={toLocale(Astro.params.locale)} category="dev" />

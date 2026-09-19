@@ -1,0 +1,27 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { groupByYear, localize, postSlug, shortDate, type Locale } from '../i18n';
+
+interface Props {
+	locale: Locale;
+	posts: CollectionEntry<'blog'>[];
+}
+
+const { locale, posts } = Astro.props;
+---
+
+{
+	groupByYear(posts).map(([year, posts]) => (
+		<>
+			<h3>{year}</h3>
+			<ul class="posts">
+				{posts.map((post) => (
+					<li>
+						<span class="date">{shortDate(post.data.date)}»</span>
+						<a href={localize(locale, `/blog/${postSlug(post)}/`)}>{post.data.title}</a>
+					</li>
+				))}
+			</ul>
+		</>
+	))
+}

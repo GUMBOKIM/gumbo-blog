@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import { HOME_POST_LIMIT, SITE_TITLE, getPosts, localePaths, localize, postSlug, toLocale, ui } from '../../i18n';
+
+export const getStaticPaths = localePaths;
+
+const locale = toLocale(Astro.params.locale);
+const t = ui[locale];
+const posts = (await getPosts(locale)).slice(0, HOME_POST_LIMIT);
+---
+
+<Base locale={locale}>
+	<section class="hero">
+		<h1>{SITE_TITLE}</h1>
+		<p>{t.description}</p>
+	</section>
+
+	<h2>{t.recent}</h2>
+	<ul class="recent">
+		{
+			posts.map((post) => (
+				<li>
+					<a href={localize(locale, `/blog/${postSlug(post)}/`)}>{post.data.title}</a>
+					<span class="date">{post.data.date.toISOString().slice(0, 10)}</span>
+				</li>
+			))
+		}
+	</ul>
+	<p class="more"><a href={localize(locale, '/blog')}>{t.allPosts} →</a></p>
+</Base>

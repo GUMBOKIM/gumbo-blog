@@ -1,0 +1,15 @@
+---
+import Base from '../../layouts/Base.astro';
+import { GITHUB_URL, localePaths, toLocale, ui } from '../../i18n';
+
+export const getStaticPaths = localePaths;
+
+const locale = toLocale(Astro.params.locale);
+const t = ui[locale];
+---
+
+<Base locale={locale} title="intro">
+	<h1 class="post-title">intro</h1>
+	<p>{t.introBody}</p>
+	<p><a href={GITHUB_URL}>GitHub</a> · <a href="https://introduce.daeheekim.dev">{t.homepage}</a></p>
+</Base>

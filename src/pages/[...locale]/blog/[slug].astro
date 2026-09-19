@@ -1,0 +1,38 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { LOCALES, formatDate, getPosts, localeParam, localize, otherLocale, postSlug, ui } from '../../../i18n';
+
+export async function getStaticPaths() {
+	const slugsByLocale = new Map<string, Set<string>>();
+	const entries = await Promise.all(LOCALES.map(async (locale) => ({ locale, posts: await getPosts(locale) })));
+	for (const { locale, posts } of entries) slugsByLocale.set(locale, new Set(posts.map(postSlug)));
+
+	return entries.flatMap(({ locale, posts }) => {
+		const other = otherLocale(locale);
+		return posts.map((post) => {
+			const slug = postSlug(post);
+			// Fall back to the other locale's home when no translation exists
+			const alternate = localize(other, slugsByLocale.get(other)!.has(slug) ? `/blog/${slug}/` : '/');
+			return {
+				params: { locale: localeParam(locale), slug },
+				props: { locale, post, alternate },
+			};
+		});
+	});
+}
+
+const { locale, post, alternate } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Base locale={locale} title={post.data.title} description={post.data.description} alternate={alternate}>
+	<article>
+		<h1 class="post-title">{post.data.title}</h1>
+		<p class="post-date">
+			<time datetime={post.data.date.toISOString()}>{formatDate(locale, post.data.date)}</time>
+			· <a href={localize(locale, `/blog/${post.data.category}`)}>{ui[locale][post.data.category]}</a>
+		</p>
+		<Content />
+	</article>
+</Base>
