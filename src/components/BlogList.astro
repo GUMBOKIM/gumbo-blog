@@ -13,8 +13,8 @@ const { locale, category } = Astro.props;
 const posts = await getPosts(locale, category);
 ---
 
-<Base locale={locale} title={category ? `blog · ${ui[locale][category]}` : 'blog'}>
-	<h1 class="post-title">blog</h1>
+<Base locale={locale} title={category ? `posts · ${ui[locale][category]}` : 'posts'}>
+	<h1 class="post-title">posts</h1>
 	<CategoryTabs locale={locale} active={category ?? 'all'} />
 	<PostsByYear locale={locale} posts={posts} />
 </Base>

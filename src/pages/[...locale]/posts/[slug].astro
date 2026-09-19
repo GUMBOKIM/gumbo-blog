@@ -13,7 +13,7 @@ export async function getStaticPaths() {
 		return posts.map((post) => {
 			const slug = postSlug(post);
 			// Fall back to the other locale's home when no translation exists
-			const alternate = localize(other, slugsByLocale.get(other)!.has(slug) ? `/blog/${slug}/` : '/');
+			const alternate = localize(other, slugsByLocale.get(other)!.has(slug) ? `/posts/${slug}/` : '/');
 			return {
 				params: { locale: localeParam(locale), slug },
 				props: { locale, post, alternate },
@@ -31,7 +31,7 @@ const { Content } = await render(post);
 		<h1 class="post-title">{post.data.title}</h1>
 		<p class="post-date">
 			<time datetime={post.data.date.toISOString()}>{formatDate(locale, post.data.date)}</time>
-			· <a href={localize(locale, `/blog/${post.data.category}`)}>{ui[locale][post.data.category]}</a>
+			· <a href={localize(locale, `/posts/${post.data.category}`)}>{ui[locale][post.data.category]}</a>
 		</p>
 		<Content />
 	</article>

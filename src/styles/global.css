@@ -11,6 +11,7 @@
 	--text-secondary: #8b949e;
 	--links: #58a6ff;
 	--code-text: #ff7b72;
+	--border: #30363d;
 	color-scheme: dark;
 }
 
@@ -276,6 +277,160 @@ nav.lang {
 	color: var(--text-secondary);
 	font-size: 0.85rem;
 	white-space: nowrap;
+}
+
+/* More breathing room between the about page's big sections */
+.about h2 {
+	margin-top: 3.5em;
+	margin-bottom: 1em;
+}
+
+.about h3 {
+	margin-top: 2.5em;
+}
+
+.about hr {
+	margin-top: 4em;
+}
+
+/* Company name · role · period on one line, summary below */
+.about h2 + p strong,
+.about p > strong:first-child {
+	color: var(--headings);
+}
+
+/* LinkedIn-style experience list: logo tile, then company line and summary */
+.experience {
+	padding: 0;
+	list-style: none;
+}
+
+.experience li {
+	display: flex;
+	align-items: flex-start;
+	gap: 1em;
+	margin: 1.4em 0;
+}
+
+.experience .logo {
+	flex-shrink: 0;
+	width: 44px;
+	height: 44px;
+	margin: 0.3em 0 0;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.experience p {
+	margin: 0;
+	line-height: 1.7;
+}
+
+.experience .company {
+	color: var(--text-secondary);
+}
+
+.experience .company a {
+	color: var(--headings);
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.experience .company a:hover {
+	color: var(--links);
+}
+
+/* All photos share one display width; click opens them full size */
+.about img:not(.logo),
+article img {
+	width: 100%;
+	max-width: 480px;
+	margin: 2em auto 0;
+	border-radius: 0.5em;
+	cursor: zoom-in;
+}
+
+/* Consecutive photos sit side by side in equal cells; click still opens the full photo */
+.gallery {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1em;
+	margin-top: 2em;
+}
+
+.gallery p {
+	margin: 0;
+}
+
+.about .gallery img {
+	max-width: none;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	margin: 0;
+}
+
+/* Portrait galleries: three tall photos in one row */
+.gallery.portrait {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+.about .gallery.portrait img {
+	aspect-ratio: 3 / 4;
+}
+
+/* Diagrams keep their whole picture instead of being cropped */
+.about .gallery img[src*='msc-contest'] {
+	object-fit: contain;
+	background: #fff;
+}
+
+.gallery .caption {
+	margin-top: 0.5em;
+}
+
+@media (max-width: 480px) {
+	.gallery {
+		grid-template-columns: 1fr;
+	}
+}
+
+.lightbox {
+	max-width: 95vw;
+	max-height: 95vh;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: zoom-out;
+}
+
+.lightbox::backdrop {
+	background: rgb(0 0 0 / 0.85);
+}
+
+.lightbox img {
+	display: block;
+	max-width: 95vw;
+	max-height: 95vh;
+	width: auto;
+	height: auto;
+	border-radius: 0.5em;
+}
+
+hr {
+	margin: 3em 0 0;
+	border: none;
+	border-top: 1px solid var(--border);
+}
+
+.caption {
+	margin-top: 0.5em;
+	text-align: center;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
+}
+
+.caption a {
+	color: inherit;
 }
 
 .more {

@@ -20,11 +20,11 @@ const posts = (await getPosts(locale)).slice(0, HOME_POST_LIMIT);
 		{
 			posts.map((post) => (
 				<li>
-					<a href={localize(locale, `/blog/${postSlug(post)}/`)}>{post.data.title}</a>
+					<a href={localize(locale, `/posts/${postSlug(post)}/`)}>{post.data.title}</a>
 					<span class="date">{post.data.date.toISOString().slice(0, 10)}</span>
 				</li>
 			))
 		}
 	</ul>
-	<p class="more"><a href={localize(locale, '/blog')}>{t.allPosts} →</a></p>
+	<p class="more"><a href={localize(locale, '/posts')}>{t.allPosts} →</a></p>
 </Base>

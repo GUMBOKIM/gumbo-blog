@@ -9,8 +9,8 @@ interface Props {
 const { locale, active } = Astro.props;
 const t = ui[locale];
 const tabs = [
-	{ key: 'all', label: t.all, href: localize(locale, '/blog') },
-	...CATEGORIES.map((c) => ({ key: c, label: t[c], href: localize(locale, `/blog/${c}`) })),
+	{ key: 'all', label: t.all, href: localize(locale, '/posts') },
+	...CATEGORIES.map((c) => ({ key: c, label: t[c], href: localize(locale, `/posts/${c}`) })),
 ];
 ---
 

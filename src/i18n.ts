@@ -9,7 +9,7 @@ export const DEFAULT_LOCALE: Locale = 'ko';
 
 export const SITE_TITLE = 'gumbo';
 export const GITHUB_URL = 'https://github.com/GUMBOKIM';
-/** Home lists this many recent posts; everything lives on /blog */
+/** Home lists this many recent posts; everything lives on /posts */
 export const HOME_POST_LIMIT = 5;
 
 export const ui = {
@@ -20,8 +20,6 @@ export const ui = {
 		all: 'all',
 		life: 'life',
 		dev: 'dev',
-		introBody: '안녕하세요. 여기에 자기소개를 적어 주세요.',
-		homepage: '소개 페이지',
 		other: 'en',
 	},
 	en: {
@@ -31,8 +29,6 @@ export const ui = {
 		all: 'all',
 		life: 'life',
 		dev: 'dev',
-		introBody: 'Hi there. Write your introduction here.',
-		homepage: 'Homepage',
 		other: 'ko',
 	},
 } satisfies Record<Locale, Record<string, string>>;
