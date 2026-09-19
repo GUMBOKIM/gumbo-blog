@@ -17,7 +17,7 @@ const { locale, posts } = Astro.props;
 			<ul class="posts">
 				{posts.map((post) => (
 					<li>
-						<span class="date">{shortDate(post.data.date)}»</span>
+						<span class="date">{shortDate(post.data.date)}</span>
 						<a href={localize(locale, `/posts/${postSlug(post)}/`)}>{post.data.title}</a>
 					</li>
 				))}
