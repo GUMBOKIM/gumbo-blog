@@ -105,7 +105,7 @@ const jsonLd = published
 				const big = dialog?.querySelector('img');
 				if (!dialog || !big) return;
 				dialog.onclick = () => dialog.close();
-				for (const img of document.querySelectorAll<HTMLImageElement>('.about img:not(.logo), article img')) {
+				for (const img of document.querySelectorAll<HTMLImageElement>('.about img:not(.logo), article img:not(.diagram)')) {
 					img.onclick = () => {
 						big.src = img.currentSrc || img.src;
 						big.alt = img.alt;

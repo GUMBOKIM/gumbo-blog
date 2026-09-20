@@ -1,0 +1,75 @@
+---
+title: "Reporting a Hometax bug: from open redirect to CVE and CWE"
+description: What an open redirect is, where to report a security vulnerability in Korea, and the difference between CVE and CWE
+category: dev
+date: 2026-09-20
+---
+
+A coworker, SH, ran into some odd behavior in the Hometax app while working. "Shouldn't we report this?" I said — and he told me he doesn't bother with tedious stuff like that. So I decided to give it a try in his place.
+
+Getting ready to file it, I found myself looking into things like "where do you even report this?" and "I've heard of CVE, but what's CWE?" Here are my notes.
+
+## What the vulnerability was
+
+Hometax uses an app link to open a specific screen in the app from a web link. Tap a link in a text or a notification and it passes through a Hometax domain to open the Sontax app. The link looked roughly like this:
+
+```
+https://m.sefd.hometax.go.kr/appLink/?linkUrl=<destination>
+```
+
+Whatever address sits in `linkUrl` gets loaded straight into the app's webview. The problem was that **the app didn't properly validate whether that value was actually a tax-service domain**. Drop an external address into `linkUrl` and the Sontax app opens as normal — with a completely unrelated external site rendered inside it.
+
+This is called an **open redirect**: a trusted domain forwarding a user anywhere at all, with no validation. On its own it can feel like a "so what," but the scary part is when it meets phishing.
+
+- The link's host is genuinely a tax-service domain (`m.sefd.hometax.go.kr`, a subdomain of `hometax.go.kr`). To anyone who checks the domain and relaxes, it looks perfectly legitimate.
+- But what finally loads could be an attacker's fake login page.
+- And it opens **inside the government's own app**, not a plain browser, borrowing all the trust that shell carries. This is especially dangerous for a webview-based app like Sontax: with no address bar, an external page looks just like a native app screen.
+
+Taxes and refunds are reliable phishing bait to begin with. Wrap them in "a government-domain link opening a government app screen" and even a cautious person could reasonably fall for it. The fix, on the other hand, isn't complicated: parse `linkUrl`, check that its scheme is HTTPS and its host is in a whitelist of allowed tax-service domains, and refuse to open anything else.
+
+<details class="evidence">
+<summary>The official "resolved" reply</summary>
+<img src="/images/hometax-response.png" alt="The National Tax Service's reply confirming the fix, received through e-People" width="900" height="720" />
+<p class="caption">The National Tax Service's "resolved" reply after I filed through e-People. The officer's name and phone number are redacted. (The reply itself is in Korean.)</p>
+</details>
+
+## Where to report a security vulnerability
+
+When it came time to file it, the first hurdle was figuring out where. The three routes I looked into were these.
+
+- **National Cyber Security Center** (NCSC, [ncsc.go.kr](https://www.ncsc.go.kr)) — handles cyber threats involving government and public institutions. Its site has a vulnerability intake form, so I filed the reproduction steps, cause, and impact there, and emailed the screen recording separately.
+- **e-People / Civil Complaints Portal** ([epeople.go.kr](https://www.epeople.go.kr)) — the government's general complaints portal. It's not a security-specific channel, but because this was a problem with one specific agency's service (Hometax), I filed here too. A complaint filed this way gets routed to the responsible agency, and in fact it was assigned to the National Tax Service, which sent back a reply. For getting an agency-service issue in front of that agency, this route was the surest.
+- **KISA's Boho.or.kr & KrCERT** ([boho.or.kr](https://www.boho.or.kr)) — I didn't use it this time, but it's worth knowing. KISA runs a program that takes reports of new vulnerabilities in software products and rewards them (a bug-bounty-style scheme). It fits vulnerabilities in widely-used products and solutions better than an issue in a single agency's web service.
+
+In short: for a public-sector agency's service, use a route that reaches that agency (e-People, NCSC); for a vulnerability in a widely-distributed product, KISA is the right door. For a private company's service, check that company's own official security-reporting channel first. For the record, I filed with both NCSC and e-People, but the "resolved" reply came back through e-People (handled by the National Tax Service).
+
+## CVE and CWE
+
+Writing the report meant citing references, and that's how I first came to distinguish CVE from CWE. I'd used Trivy to scan container images for vulnerabilities before handing them to clients on SI projects, so CVE was familiar — but CWE was something I looked at properly for the first time here.
+
+**CVE** (Common Vulnerabilities and Exposures) is a unique ID assigned to each individual vulnerability found in a specific product or version. Log4Shell, for example, carries the number `CVE-2021-44228`. It's close to a case number: "this one door was unlocked."
+
+**CWE** (Common Weakness Enumeration) is a dictionary that classifies vulnerabilities by type. The open redirect I reported falls under `CWE-601`. It's not an individual incident but a category: "the mistake of leaving doors unlocked."
+
+So a single CVE (a concrete incident) usually gets tagged with one or more CWEs (the type of weakness behind it). Conversely, what I reported is a CWE-601 type but didn't get a CVE number: CVEs are generally issued for distributed or sold software products, so they rarely attach to a one-off service run by a single agency like this.
+
+Real CVEs classified as open redirect (CWE-601) include Directus's `CVE-2024-28239` and caddy-security's `CVE-2024-21497`. Here's how one weakness type (a CWE) ends up with many instances (CVEs), drawn out:
+
+<img class="diagram" src="/diagrams/cve-cwe.svg" alt="How CWE-601 (Open Redirect) maps to CVEs: real examples CVE-2024-28239 and CVE-2024-21497, plus this Hometax case with no CVE" width="640" height="320" />
+<p class="caption">One "type" like CWE-601 (Open Redirect) has many CVEs (individual "instances"); a vulnerability with no CVE number, like this Hometax case, still belongs to the same type (1 : 0..N). Severity is gauged separately with a CVSS score.</p>
+
+Looking around, there turned out to be several more of these classification and scoring systems.
+
+- **CVSS** (Common Vulnerability Scoring System) — the standard for scoring a vulnerability's severity from 0.0 to 10.0.
+- **CWE Top 25** — MITRE's annual list of the "most dangerous software weaknesses."
+- **OWASP Top 10** — a list of the risks that show up especially often and severely in web applications. Widely used as a practical checklist.
+- **CAPEC** (Common Attack Pattern Enumeration and Classification) — a dictionary of attack patterns: how weaknesses actually get exploited.
+- **CISA KEV** (Known Exploited Vulnerabilities) — a catalog of vulnerabilities confirmed to be actively exploited, used to set patch priorities.
+
+Even just telling CVE, CWE, and CVSS apart gives you the frame: what kind of mistake (the CWE type) broke where (the CVE instance) and how dangerous it is (CVSS).
+
+## Wrapping up
+
+I didn't find anything remarkable, and I didn't find it — I just reported what a coworker happened to notice. Still, having gone through the experience once of not shrugging off a "that's weird" and instead routing it to the right channel, I think I'll hesitate less next time. When I write code that takes a link and sends someone somewhere in a service of my own, I think I'll remember to validate the destination. And when something looks off, I won't let it slide — on top of the tools I already use, I'll have an AI take a pass at it too.
+
+As an aside: sadly, there was no reward — just a single "resolved" reply from the tax service. Then again, that isn't why I did it.

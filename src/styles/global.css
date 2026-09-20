@@ -401,6 +401,31 @@ article img {
 	cursor: zoom-in;
 }
 
+/* Diagrams span the full column and aren't zoomable photos */
+article img.diagram {
+	max-width: 100%;
+	border-radius: 0;
+	cursor: default;
+}
+
+/* Collapsible supplementary evidence (e.g. the official reply) */
+details.evidence {
+	margin: 2em 0 0;
+}
+details.evidence summary {
+	cursor: pointer;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+}
+details.evidence summary:hover {
+	color: var(--accent);
+}
+details.evidence img {
+	margin-top: 1em;
+	border: 1px solid var(--border);
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* Consecutive photos sit side by side in equal cells; click still opens the full photo */
 .gallery {
 	display: grid;
