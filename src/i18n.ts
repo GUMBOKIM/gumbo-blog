@@ -69,7 +69,8 @@ export function switchLocale(pathname: string, to: Locale) {
 }
 
 export function postSlug(post: CollectionEntry<'blog'>) {
-	return post.id.split('/').slice(1).join('/');
+	// Posts live at blog/<slug>/<locale>.md, so the slug is everything before the locale segment
+	return post.id.split('/').slice(0, -1).join('/');
 }
 
 /** 예약 발행: 날짜가 아직 안 된 글은 빌드에서 빠진다. dev에서는 미리 보이게 둔다 */
@@ -81,7 +82,7 @@ export async function getPosts(locale: Locale, category?: Category) {
 	const posts = await getCollection(
 		'blog',
 		({ id, data }) =>
-			id.startsWith(`${locale}/`) &&
+			id.endsWith(`/${locale}`) &&
 			!data.draft &&
 			isPublished(data.date) &&
 			(category === undefined || data.category === category),

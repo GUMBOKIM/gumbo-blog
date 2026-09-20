@@ -5,6 +5,9 @@ category: dev
 date: 2026-09-20
 ---
 
+import diagram from './assets/cve-cwe.svg?url';
+import reply from './assets/hometax-response.png?url';
+
 동료 SH님이 일하다가 홈택스 앱에서 이상한 동작을 하나 발견했습니다. "이거 신고해야 하는 거 아니야?" 했더니, 본인은 이런 귀찮은 건 안 한다고 하더군요. 그래서 제가 대신 해 보기로 했습니다.
 
 준비하다 보니 "이런 건 어디에 어떻게 신고하지", "CVE는 들어봤는데 CWE는 뭐지" 같은 걸 찾아보게 됐고, 알게 된 것들을 정리해 둡니다.
@@ -29,7 +32,7 @@ https://m.sefd.hometax.go.kr/appLink/?linkUrl=<이동할 주소>
 
 <details class="evidence">
 <summary>국세청 '개선완료' 답변</summary>
-<img src="/images/hometax-response.png" alt="국민신문고를 통한 국세청의 개선완료 답변" width="900" height="720" />
+<img src={reply} alt="국민신문고를 통한 국세청의 개선완료 답변" width="900" height="720" />
 <p class="caption">국민신문고로 접수한 뒤 받은 국세청의 '개선완료' 답변. 담당자 실명·연락처는 가렸습니다.</p>
 </details>
 
@@ -55,7 +58,7 @@ https://m.sefd.hometax.go.kr/appLink/?linkUrl=<이동할 주소>
 
 실제로 오픈 리다이렉트(CWE-601)로 분류된 CVE로는 Directus의 `CVE-2024-28239`, caddy-security의 `CVE-2024-21497` 같은 사례가 있습니다. 같은 유형(CWE)에 이렇게 여러 사례(CVE)가 달리는 구조를 그림으로 보면 이렇습니다.
 
-<img class="diagram" src="/diagrams/cve-cwe.svg" alt="CWE-601(오픈 리다이렉트) 하나에 여러 CVE가 달리는 관계도. 실제 예시 CVE-2024-28239, CVE-2024-21497과, CVE가 하나도 없는 이번 홈택스 건" width="640" height="320" />
+<img class="diagram" src={diagram} alt="CWE-601(오픈 리다이렉트) 하나에 여러 CVE가 달리는 관계도. 실제 예시 CVE-2024-28239, CVE-2024-21497과, CVE가 하나도 없는 이번 홈택스 건" width="640" height="320" />
 <p class="caption">CWE-601(오픈 리다이렉트) 같은 '유형' 하나에는 여러 CVE(개별 '사례')가 달립니다. 이번 홈택스 건처럼 CVE 번호가 붙지 않은 취약점도 같은 유형에 속하고요(1 : 0..N). 심각도는 CVSS 점수로 따로 가늠합니다.</p>
 
 찾아보니 이런 분류·평가 체계가 더 있었습니다.

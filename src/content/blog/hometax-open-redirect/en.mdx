@@ -5,6 +5,9 @@ category: dev
 date: 2026-09-20
 ---
 
+import diagram from './assets/cve-cwe.svg?url';
+import reply from './assets/hometax-response.png?url';
+
 A coworker, SH, ran into some odd behavior in the Hometax app while working. "Shouldn't we report this?" I said — and he told me he doesn't bother with tedious stuff like that. So I decided to give it a try in his place.
 
 Getting ready to file it, I found myself looking into things like "where do you even report this?" and "I've heard of CVE, but what's CWE?" Here are my notes.
@@ -29,7 +32,7 @@ Taxes and refunds are reliable phishing bait to begin with. Wrap them in "a gove
 
 <details class="evidence">
 <summary>The official "resolved" reply</summary>
-<img src="/images/hometax-response.png" alt="The National Tax Service's reply confirming the fix, received through e-People" width="900" height="720" />
+<img src={reply} alt="The National Tax Service's reply confirming the fix, received through e-People" width="900" height="720" />
 <p class="caption">The National Tax Service's "resolved" reply after I filed through e-People. The officer's name and phone number are redacted. (The reply itself is in Korean.)</p>
 </details>
 
@@ -55,7 +58,7 @@ So a single CVE (a concrete incident) usually gets tagged with one or more CWEs 
 
 Real CVEs classified as open redirect (CWE-601) include Directus's `CVE-2024-28239` and caddy-security's `CVE-2024-21497`. Here's how one weakness type (a CWE) ends up with many instances (CVEs), drawn out:
 
-<img class="diagram" src="/diagrams/cve-cwe.svg" alt="How CWE-601 (Open Redirect) maps to CVEs: real examples CVE-2024-28239 and CVE-2024-21497, plus this Hometax case with no CVE" width="640" height="320" />
+<img class="diagram" src={diagram} alt="How CWE-601 (Open Redirect) maps to CVEs: real examples CVE-2024-28239 and CVE-2024-21497, plus this Hometax case with no CVE" width="640" height="320" />
 <p class="caption">One "type" like CWE-601 (Open Redirect) has many CVEs (individual "instances"); a vulnerability with no CVE number, like this Hometax case, still belongs to the same type (1 : 0..N). Severity is gauged separately with a CVSS score.</p>
 
 Looking around, there turned out to be several more of these classification and scoring systems.

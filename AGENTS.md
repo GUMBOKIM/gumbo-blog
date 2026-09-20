@@ -10,8 +10,11 @@ npm run post <slug> [life|dev]   # ko/en 두 파일을 한 번에 만든다
 npm run dev                      # http://localhost:4321
 ```
 
-- 글은 `src/content/blog/{ko,en}/<slug>.md`. 두 언어가 같은 파일명이면 언어 전환 링크가 서로 연결된다.
-  번역본이 없으면 그 언어의 홈으로 보낸다.
+- 글은 포스트별 폴더로 모은다: `src/content/blog/<slug>/ko.md`, `<slug>/en.md`, 이미지는 `<slug>/assets/`.
+  같은 폴더 안에 두 언어가 있으면 언어 전환 링크가 서로 연결되고, 번역본이 없으면 그 언어의 홈으로 보낸다.
+  본문 이미지는 마크다운 `![설명](./assets/이름.jpg)`으로 넣으면 Astro가 최적화한다.
+  커스텀 HTML(예: `<img class>`, `<details>`)에서 폴더 안 이미지를 쓰려면 그 글을 `.mdx`로 두고 `import`해서 쓴다
+  (예: `hometax-open-redirect`). 그 외 자산(파비콘 등)만 `public/`에 둔다.
 - frontmatter: `title`, `date`, `category`(`life` 개인 / `dev` 개발) 필수. `description`, `draft: true` 선택.
 - `date`를 미래로 적으면 예약 발행이다. 그 날짜 전에는 아예 빌드되지 않아 URL도 생기지 않고,
   Actions가 하루 한 번(한국 시간 09:10쯤) 다시 빌드하면서 때가 되면 올라온다. `npm run dev`에서는 미리 보인다.
@@ -22,7 +25,8 @@ npm run dev                      # http://localhost:4321
 ## 사진
 
 ```bash
-npm run photo <원본경로> [이름] [가로폭] [square]
+npm run photo <원본경로> <대상> [이름] [가로폭] [square]
+# <대상>은 콘텐츠 폴더: 예) blog/<slug> 또는 about → src/content/<대상>/assets/<이름>.jpg 로 저장
 ```
 
 - 휴대폰 사진에는 GPS가 들어 있으므로 **항상 EXIF를 지우고** 넣는다. 위 스크립트가 처리한다.
@@ -33,7 +37,7 @@ npm run photo <원본경로> [이름] [가로폭] [square]
 
 ## 글 외 콘텐츠
 
-- about 페이지 본문은 `src/content/about/{ko,en}.md`.
+- about 페이지 본문은 `src/content/about/{ko,en}.mdx`. 이미지·회사 로고는 `about/assets/`에 두고 `import`해서 쓴다.
 - 사이트 이름, 소개 문구, UI 문구는 `src/i18n.ts` 한 곳에 모여 있다.
 
 ## 디자인 규칙

@@ -1,4 +1,5 @@
 // Creates an empty post in both languages: node scripts/new-post.mjs <slug> [life|dev]
+// Layout: src/content/blog/<slug>/{ko,en}.md  (+ an assets/ folder for its images)
 import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 
 const [slug, category = 'life'] = process.argv.slice(2);
@@ -15,13 +16,14 @@ const date = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 const front = (title, description) =>
 	`---\ntitle: ${title}\ndescription: ${description}\ncategory: ${category}\ndate: ${date}\n---\n\n`;
 
+const dir = `src/content/blog/${slug}`;
+mkdirSync(`${dir}/assets`, { recursive: true });
+
 for (const [locale, body] of [
 	['ko', front(slug, '')],
 	['en', front(slug, '')],
 ]) {
-	const dir = `src/content/blog/${locale}`;
-	const file = `${dir}/${slug}.md`;
-	mkdirSync(dir, { recursive: true });
+	const file = `${dir}/${locale}.md`;
 	if (existsSync(file)) {
 		console.log(`skip  ${file} (already exists)`);
 		continue;
@@ -29,3 +31,4 @@ for (const [locale, body] of [
 	writeFileSync(file, body);
 	console.log(`create ${file}`);
 }
+console.log(`images: put them in ${dir}/assets/ and reference as ![설명](./assets/name.jpg)`);
