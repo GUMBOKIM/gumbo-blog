@@ -43,6 +43,14 @@ npm run photo <원본경로> [이름] [가로폭] [square]
 - 본문 폭은 `--max-width`(768px) 하나로 조절한다.
 - 레이아웃이 흔들리지 않게 유지한다: 굵은 글씨 자리 미리 확보(`[data-label]`), `scrollbar-gutter: stable`.
 
+## 브랜치
+
+- `main` — 실제 배포본. 여기에 push하면 자동 배포된다. 직접 커밋하지 말고 아래 작업 브랜치에서 머지한다.
+- `post/<슬러그>` — 글 하나를 쓰는 브랜치. 슬러그는 글 파일명과 맞춘다 (예: `post/hometax-open-redirect`).
+- `chore/<작업>` — 글 외 작업(설정·스타일·버그픽스 등). (예: `chore/terminal-korean-glyph`)
+
+브랜치 이름의 슬러그·작업 부분은 영문 케밥케이스로 쓴다. 한글·공백은 도구에 따라 깨진다.
+
 ## 배포
 
 ```bash
