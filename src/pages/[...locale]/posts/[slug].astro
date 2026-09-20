@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
+import Comments from '../../../components/Comments.astro';
 import { LOCALES, formatDate, getPosts, localeParam, localize, otherLocale, postSlug, ui } from '../../../i18n';
 
 export async function getStaticPaths() {
@@ -26,7 +27,13 @@ const { locale, post, alternate } = Astro.props;
 const { Content } = await render(post);
 ---
 
-<Base locale={locale} title={post.data.title} description={post.data.description} alternate={alternate}>
+<Base
+	locale={locale}
+	title={post.data.title}
+	description={post.data.description}
+	alternate={alternate}
+	published={post.data.date}
+>
 	<article>
 		<h1 class="post-title">{post.data.title}</h1>
 		<p class="post-date">
@@ -35,4 +42,5 @@ const { Content } = await render(post);
 		</p>
 		<Content />
 	</article>
+	<Comments locale={locale} />
 </Base>

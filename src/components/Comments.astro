@@ -1,0 +1,40 @@
+---
+import type { Locale } from '../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<section class="comments" data-lang={locale} aria-label="comments"></section>
+
+<script>
+	// giscus keeps comments and reactions in this repo's GitHub Discussions.
+	// Injected on every client-side navigation, since ClientRouter swaps the page content.
+	const load = () => {
+		const host = document.querySelector<HTMLElement>('.comments');
+		if (!host || host.firstChild) return;
+		const script = document.createElement('script');
+		script.src = 'https://giscus.app/client.js';
+		script.async = true;
+		script.crossOrigin = 'anonymous';
+		Object.assign(script.dataset, {
+			repo: 'GUMBOKIM/gumbo-blog',
+			repoId: 'R_kgDOJYNgDA',
+			category: 'Announcements',
+			categoryId: 'DIC_kwDOJYNgDM4DF-3H',
+			mapping: 'pathname',
+			strict: '1',
+			reactionsEnabled: '1',
+			emitMetadata: '0',
+			inputPosition: 'bottom',
+			theme: 'dark_dimmed',
+			lang: host.dataset.lang === 'ko' ? 'ko' : 'en',
+			loading: 'lazy',
+		});
+		host.appendChild(script);
+	};
+	document.addEventListener('astro:page-load', load);
+</script>

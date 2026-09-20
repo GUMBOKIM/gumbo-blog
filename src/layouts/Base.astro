@@ -1,7 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
-import { SITE_TITLE, ui, localize, otherLocale, switchLocale, type Locale } from '../i18n';
+import { AUTHOR, DEFAULT_LOCALE, SITE_TITLE, ui, localize, otherLocale, switchLocale, type Locale } from '../i18n';
 
 interface Props {
 	locale: Locale;
@@ -9,9 +9,11 @@ interface Props {
 	description?: string;
 	/** Path of this page in the other locale, when it differs from the default mapping */
 	alternate?: string;
+	/** Set on post pages so search engines get the article's date and author */
+	published?: Date;
 }
 
-const { locale, title, description = ui[locale].description } = Astro.props;
+const { locale, title, description = ui[locale].description, published } = Astro.props;
 const other = otherLocale(locale);
 const alternate = Astro.props.alternate ?? switchLocale(Astro.url.pathname, other);
 const aboutPath = localize(locale, '/about');
@@ -21,6 +23,27 @@ const isAbout = current === aboutPath;
 const isPosts = current === postsPath || current.startsWith(`${postsPath}/`);
 const pageTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const author = { '@type': 'Person', name: AUTHOR, url: new URL(localize(locale, '/about'), Astro.site).href };
+const jsonLd = published
+	? {
+			'@context': 'https://schema.org',
+			'@type': 'BlogPosting',
+			headline: title,
+			description,
+			datePublished: published.toISOString().slice(0, 10),
+			inLanguage: locale,
+			mainEntityOfPage: canonical.href,
+			author,
+		}
+	: {
+			'@context': 'https://schema.org',
+			'@type': 'WebSite',
+			name: SITE_TITLE,
+			description,
+			inLanguage: locale,
+			url: new URL(localize(locale, '/'), Astro.site).href,
+			author,
+		};
 ---
 
 <html lang={locale}>
@@ -29,13 +52,24 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="canonical" href={canonical} />
+		<link rel="alternate" hreflang={locale} href={canonical} />
 		<link rel="alternate" hreflang={other} href={new URL(alternate, Astro.site)} />
+		<link
+			rel="alternate"
+			hreflang="x-default"
+			href={locale === DEFAULT_LOCALE ? canonical : new URL(alternate, Astro.site)}
+		/>
+		<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={localize(locale, '/rss.xml')} />
 		<link rel="sitemap" href="/sitemap-index.xml" />
 		<title>{pageTitle}</title>
 		<meta name="description" content={description} />
 		<meta property="og:title" content={pageTitle} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonical} />
+		<meta property="og:type" content={published ? 'article' : 'website'} />
+		<meta property="og:site_name" content={SITE_TITLE} />
+		<meta property="og:locale" content={locale === 'ko' ? 'ko_KR' : 'en_US'} />
+		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
 		<ClientRouter />
 	</head>
 	<body>
@@ -53,7 +87,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 			<slot />
 		</main>
 		<footer>
-			© {new Date().getFullYear()} {SITE_TITLE}
+			<span>© {new Date().getFullYear()} {SITE_TITLE}</span>
+			<a href={localize(locale, '/rss.xml')}>rss</a>
 		</footer>
 		<dialog class="lightbox" aria-label="Enlarged image"><img alt="" /></dialog>
 		<script>

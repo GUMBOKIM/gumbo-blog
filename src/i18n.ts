@@ -8,6 +8,7 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'ko';
 
 export const SITE_TITLE = 'gumbo';
+export const AUTHOR = 'Gumbo';
 export const GITHUB_URL = 'https://github.com/GUMBOKIM';
 /** Home lists this many recent posts; everything lives on /posts */
 export const HOME_POST_LIMIT = 5;
