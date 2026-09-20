@@ -1,5 +1,4 @@
 ---
-import { Font } from 'astro:assets';
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import { SITE_TITLE, ui, localize, otherLocale, switchLocale, type Locale } from '../i18n';
@@ -37,10 +36,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<meta property="og:title" content={pageTitle} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonical} />
-		<Font cssVariable="--font-serif" preload={[{ weight: '400', style: 'normal' }]} />
-		<Font cssVariable="--font-serif-kr" />
-		<Font cssVariable="--font-sans" preload={[{ weight: '700' }]} />
-		<Font cssVariable="--font-mono" preload={[{ weight: '400' }]} />
 		<ClientRouter />
 	</head>
 	<body>

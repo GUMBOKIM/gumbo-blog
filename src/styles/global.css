@@ -1,4 +1,11 @@
 :root {
+	/* System fonts: nothing to download, native look on each OS */
+	--font-sans: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Segoe UI',
+		'Malgun Gothic', system-ui, sans-serif;
+	--font-serif: var(--font-sans);
+	--font-mono: ui-monospace, SFMono-Regular, 'SF Mono', 'Cascadia Mono', Consolas,
+		'D2Coding', monospace;
+
 	/* Reading column width; change this one value to widen or narrow the site */
 	--max-width: 768px;
 	--gutter: clamp(16px, 5vw, 32px);
@@ -34,7 +41,7 @@ body {
 	min-height: 100dvh;
 	margin: 0;
 	color: var(--text);
-	font-family: var(--font-serif), var(--font-serif-kr);
+	font-family: var(--font-serif);
 	line-height: 1.9;
 	word-break: keep-all;
 	overflow-wrap: break-word;
@@ -53,7 +60,7 @@ h2,
 h3,
 h4 {
 	color: var(--headings);
-	font-family: var(--font-sans), 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+	font-family: var(--font-sans);
 	line-height: 1.4;
 }
 
