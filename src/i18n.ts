@@ -18,6 +18,7 @@ export const ui = {
 		description: '이것저것 생각하는 것들을 기록합니다',
 		recent: '최근 글',
 		older: '이전 글',
+		minutes: '분',
 		newer: '다음 글',
 		allPosts: '모든 글 보기',
 		all: 'all',
@@ -29,6 +30,7 @@ export const ui = {
 		description: 'Writing down whatever comes to mind',
 		recent: 'Recent',
 		older: 'Older',
+		minutes: 'min read',
 		newer: 'Newer',
 		allPosts: 'All posts',
 		all: 'all',
@@ -101,4 +103,14 @@ export function groupByYear(posts: CollectionEntry<'blog'>[]) {
 /** MM-DD */
 export function shortDate(date: Date) {
 	return date.toISOString().slice(5, 10);
+}
+
+/** Rough reading time in minutes: ~500 Korean characters or ~200 English words per minute */
+export function readingTime(body: string, locale: Locale) {
+	const text = body
+		.replace(/```[\s\S]*?```/g, '') // code blocks
+		.replace(/!?\[[^\]]*\]\([^)]*\)/g, '') // links and images
+		.replace(/<[^>]+>/g, '');
+	const minutes = locale === 'ko' ? text.replace(/\s/g, '').length / 500 : text.split(/\s+/).filter(Boolean).length / 200;
+	return Math.max(1, Math.round(minutes));
 }

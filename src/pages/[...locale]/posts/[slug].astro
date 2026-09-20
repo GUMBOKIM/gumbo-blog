@@ -2,7 +2,7 @@
 import { render } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
 import Comments from '../../../components/Comments.astro';
-import { LOCALES, formatDate, getPosts, localeParam, localize, otherLocale, postSlug, ui } from '../../../i18n';
+import { LOCALES, formatDate, getPosts, localeParam, localize, otherLocale, postSlug, readingTime, ui } from '../../../i18n';
 
 export async function getStaticPaths() {
 	const slugsByLocale = new Map<string, Set<string>>();
@@ -41,6 +41,7 @@ const t = ui[locale];
 		<p class="post-date">
 			<time datetime={post.data.date.toISOString()}>{formatDate(locale, post.data.date)}</time>
 			· <a href={localize(locale, `/posts/${post.data.category}`)}>{ui[locale][post.data.category]}</a>
+			· {readingTime(post.body ?? '', locale)}{locale === 'ko' ? '분' : ' min read'}
 		</p>
 		<Content />
 	</article>

@@ -478,8 +478,19 @@ article img {
 	font-family: var(--font-mono);
 }
 
+.notfound .more {
+	display: flex;
+	justify-content: center;
+	gap: 1.5em;
+}
+
 .notfound .more a {
 	color: var(--links);
+}
+
+.notfound p[lang='en'] {
+	color: var(--text-secondary);
+	font-size: 0.95rem;
 }
 
 /* Previous and next post at the end of an article */
