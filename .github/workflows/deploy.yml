@@ -3,9 +3,10 @@ name: Deploy
 on:
   push:
     branches: [main]
-  # 예약 발행 글을 반영하려면 주기적으로 다시 빌드해야 한다 (frontmatter date 기준, UTC)
+  # 예약 발행 글을 반영하려면 주기적으로 다시 빌드해야 한다.
+  # 00:10 UTC = 한국 09:10. date에 날짜만 적으면 그 날 아침에 올라온다.
   schedule:
-    - cron: '0 * * * *'
+    - cron: '10 0 * * *'
   workflow_dispatch:
 
 permissions:
