@@ -13,6 +13,9 @@ npm run dev                      # http://localhost:4321
 - 글은 `src/content/blog/{ko,en}/<slug>.md`. 두 언어가 같은 파일명이면 언어 전환 링크가 서로 연결된다.
   번역본이 없으면 그 언어의 홈으로 보낸다.
 - frontmatter: `title`, `date`, `category`(`life` 개인 / `dev` 개발) 필수. `description`, `draft: true` 선택.
+- `date`를 미래로 적으면 예약 발행이다. 그 날짜 전에는 아예 빌드되지 않아 URL도 생기지 않고,
+  Actions가 매시 다시 빌드하면서 때가 되면 올라온다. `npm run dev`에서는 미리 보인다.
+  시각은 UTC 기준이라 `2026-09-21`은 한국 시간 21일 09시다. 정확히 맞추려면 `2026-09-21T20:00:00+09:00`처럼 적는다.
 - 카테고리를 늘리려면 `src/categories.ts`에 추가하고, `src/i18n.ts`에 이름을 넣고,
   `src/pages/[...locale]/posts/<category>.astro`를 만든다.
 

@@ -3,6 +3,9 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # 예약 발행 글을 반영하려면 주기적으로 다시 빌드해야 한다 (frontmatter date 기준, UTC)
+  schedule:
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:
