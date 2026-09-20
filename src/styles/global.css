@@ -10,15 +10,16 @@
 	--max-width: 768px;
 	--gutter: clamp(16px, 5vw, 32px);
 
-	/* GitHub dark palette */
-	--bg: #0d1117;
-	--bg-secondary: #161b22;
-	--headings: #e6edf3;
-	--text: #c9d1d9;
-	--text-secondary: #8b949e;
-	--links: #58a6ff;
-	--code-text: #ff7b72;
-	--border: #30363d;
+	/* Colors taken from the Astro Cactus theme's dark mode */
+	--bg: oklch(23.64% 0.0045 248);
+	--bg-secondary: oklch(28% 0.006 248);
+	--headings: oklch(94.66% 0 0);
+	--text: oklch(83.54% 0 264);
+	--text-secondary: oklch(70.7% 0.022 261.325);
+	--links: oklch(70.44% 0.1133 349); /* pink */
+	--accent: oklch(70.91% 0.1415 163.7); /* mint, for hover and the current menu */
+	--code-text: oklch(94.8% 0.106 136.49);
+	--border: oklch(38% 0.008 248);
 	color-scheme: dark;
 }
 
@@ -72,6 +73,11 @@ h4 {
 
 a {
 	color: var(--links);
+	text-underline-offset: 0.25em;
+}
+
+a:hover {
+	color: var(--accent);
 }
 
 p {
@@ -179,7 +185,7 @@ nav.lang {
 
 .menu a[aria-current='page'],
 .tabs a[aria-current='page'] {
-	color: var(--headings);
+	color: var(--accent);
 	font-weight: bold;
 }
 
@@ -202,7 +208,7 @@ nav.lang {
 
 .menu a:hover,
 .lang a:hover {
-	color: var(--links);
+	color: var(--accent);
 }
 
 /* Keep code blocks on the page background */
@@ -213,14 +219,6 @@ nav.lang {
 .dashed {
 	border-top: 1px var(--text) dashed;
 	margin: 0.5em 0;
-}
-
-.posts {
-	padding-left: 1.2em;
-}
-
-.posts a {
-	text-decoration: none;
 }
 
 .date {
@@ -244,46 +242,92 @@ nav.lang {
 }
 
 .tabs a:hover {
-	color: var(--links);
+	color: var(--accent);
 }
 
 .hero {
-	padding: 3em 0 1.5em;
-	border-bottom: 1px dashed var(--text-secondary);
+	padding: 3.5em 0 2.5em;
 }
 
 .hero h1 {
 	margin: 0;
-	font-size: 2.6rem;
+	font-size: 2.8rem;
+	letter-spacing: -0.02em;
 }
 
 .hero p {
-	margin: 0.4em 0 0;
+	margin: 0.6em 0 0;
 	color: var(--text-secondary);
+	font-size: 1.05rem;
 }
 
-.recent {
+.entries h2 {
+	margin: 2.5em 0 0.2em;
+	font-size: 1rem;
+	color: var(--text-secondary);
+	font-family: var(--font-mono);
+	font-weight: normal;
+}
+
+.recent h2 {
+	margin: 0 0 0.5em;
+	font-size: 1.1rem;
+	color: var(--text-secondary);
+	font-weight: normal;
+	letter-spacing: 0.04em;
+	text-transform: lowercase;
+}
+
+.recent ul, .entries ul {
+	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-.recent li {
-	display: flex;
-	justify-content: space-between;
-	align-items: baseline;
-	gap: 1em;
-	margin: 0.7em 0;
+.recent li + li, .entries li + li {
+	border-top: 1px solid var(--border);
 }
 
-.recent a {
+/* The whole row is one link, so anywhere in the block is clickable */
+.recent a, .entries a {
+	display: block;
+	padding: 1.1em 0;
+	color: var(--text);
 	text-decoration: none;
 }
 
-.recent .date {
-	margin: 0;
+.recent .meta, .entries .meta {
+	display: flex;
+	gap: 0.8em;
+	align-items: center;
+	font-family: var(--font-mono);
+	font-size: 0.78rem;
 	color: var(--text-secondary);
-	font-size: 0.85rem;
-	white-space: nowrap;
+}
+
+.recent .tag::before, .entries .tag::before {
+	content: '#';
+	opacity: 0.6;
+}
+
+.recent .title, .entries .title {
+	display: block;
+	margin-top: 0.15em;
+	color: var(--headings);
+	font-size: 1.15rem;
+	font-weight: bold;
+}
+
+.recent .summary, .entries .summary {
+	display: block;
+	margin-top: 0.15em;
+	color: var(--text-secondary);
+	font-size: 0.92rem;
+}
+
+.recent a:hover .title,
+.entries a:hover .title {
+	color: var(--accent);
 }
 
 /* More breathing room between the about page's big sections */
@@ -344,7 +388,7 @@ nav.lang {
 }
 
 .experience .company a:hover {
-	color: var(--links);
+	color: var(--accent);
 }
 
 /* All photos share one display width; click opens them full size */
@@ -423,6 +467,49 @@ article img {
 	border-radius: 0.5em;
 }
 
+.notfound {
+	padding: 6em 0;
+	text-align: center;
+}
+
+.notfound h1 {
+	margin: 0;
+	font-size: 4rem;
+	font-family: var(--font-mono);
+}
+
+.notfound .more a {
+	color: var(--links);
+}
+
+/* Previous and next post at the end of an article */
+.post-nav {
+	display: flex;
+	justify-content: space-between;
+	gap: 1.5em;
+	margin-top: 4em;
+	padding-top: 2em;
+	border-top: 1px solid var(--border);
+	font-size: 0.95rem;
+}
+
+.post-nav a {
+	max-width: 48%;
+	text-decoration: none;
+}
+
+.post-nav .dir {
+	display: block;
+	color: var(--text-secondary);
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+}
+
+.post-nav .next {
+	margin-left: auto;
+	text-align: right;
+}
+
 .comments {
 	margin-top: 4em;
 	padding-top: 2em;
@@ -482,10 +569,20 @@ footer a {
 }
 
 footer a:hover {
-	color: var(--links);
+	color: var(--accent);
 }
 
 @media (max-width: 600px) {
+	/* Company · role · period gets tight on a phone */
+	.experience .company {
+		font-size: 0.92rem;
+		line-height: 1.6;
+	}
+
+	.experience li {
+		gap: 0.8em;
+	}
+
 	/* Full-bleed code blocks on phones */
 	pre {
 		margin-left: calc(var(--gutter) * -1);

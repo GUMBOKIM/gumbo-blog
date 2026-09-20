@@ -20,6 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: withastro/action@v4
+        env:
+          # Set the PUBLIC_GA_ID repository variable to switch Google Analytics on
+          PUBLIC_GA_ID: ${{ vars.PUBLIC_GA_ID }}
 
   deploy:
     needs: build

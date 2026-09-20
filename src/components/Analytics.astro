@@ -1,0 +1,25 @@
+---
+// Google Analytics 4. Set PUBLIC_GA_ID in .env (or the GitHub Actions env) to switch it on;
+// with no id nothing is loaded, so local development stays untracked.
+const gaId = import.meta.env.PUBLIC_GA_ID;
+---
+
+{
+	gaId && (
+		<>
+			<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+			<script is:inline define:vars={{ gaId }}>
+				window.dataLayer = window.dataLayer || [];
+				function gtag() {
+					dataLayer.push(arguments);
+				}
+				gtag('js', new Date());
+				gtag('config', gaId);
+				// ClientRouter swaps pages without a reload, so report those as page views too
+				document.addEventListener('astro:page-load', () => {
+					gtag('event', 'page_view', { page_location: location.href, page_title: document.title });
+				});
+			</script>
+		</>
+	)
+}

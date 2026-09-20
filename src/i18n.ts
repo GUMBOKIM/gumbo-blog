@@ -17,6 +17,8 @@ export const ui = {
 	ko: {
 		description: '이것저것 생각하는 것들을 기록합니다',
 		recent: '최근 글',
+		older: '이전 글',
+		newer: '다음 글',
 		allPosts: '모든 글 보기',
 		all: 'all',
 		life: 'life',
@@ -26,6 +28,8 @@ export const ui = {
 	en: {
 		description: 'Writing down whatever comes to mind',
 		recent: 'Recent',
+		older: 'Older',
+		newer: 'Newer',
 		allPosts: 'All posts',
 		all: 'all',
 		life: 'life',

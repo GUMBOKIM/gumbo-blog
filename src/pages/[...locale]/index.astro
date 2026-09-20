@@ -1,6 +1,16 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { HOME_POST_LIMIT, SITE_TITLE, getPosts, localePaths, localize, postSlug, toLocale, ui } from '../../i18n';
+import {
+	HOME_POST_LIMIT,
+	SITE_TITLE,
+	getPosts,
+	localePaths,
+	localize,
+	postSlug,
+	shortDate,
+	toLocale,
+	ui,
+} from '../../i18n';
 
 export const getStaticPaths = localePaths;
 
@@ -15,16 +25,26 @@ const posts = (await getPosts(locale)).slice(0, HOME_POST_LIMIT);
 		<p>{t.description}</p>
 	</section>
 
-	<h2>{t.recent}</h2>
-	<ul class="recent">
-		{
-			posts.map((post) => (
-				<li>
-					<a href={localize(locale, `/posts/${postSlug(post)}/`)}>{post.data.title}</a>
-					<span class="date">{post.data.date.toISOString().slice(0, 10)}</span>
-				</li>
-			))
-		}
-	</ul>
-	<p class="more"><a href={localize(locale, '/posts')}>{t.allPosts} →</a></p>
+	<section class="recent">
+		<h2>{t.recent}</h2>
+		<ul>
+			{
+				posts.map((post) => (
+					<li>
+						<a href={localize(locale, `/posts/${postSlug(post)}/`)}>
+							<span class="meta">
+								<time datetime={post.data.date.toISOString()}>
+									{post.data.date.getUTCFullYear()}.{shortDate(post.data.date).replace('-', '.')}
+								</time>
+								<span class="tag">{t[post.data.category]}</span>
+							</span>
+							<span class="title">{post.data.title}</span>
+							{post.data.description && <span class="summary">{post.data.description}</span>}
+						</a>
+					</li>
+				))
+			}
+		</ul>
+		<p class="more"><a href={localize(locale, '/posts')}>{t.allPosts} →</a></p>
+	</section>
 </Base>

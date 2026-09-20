@@ -11,7 +11,7 @@ export default defineConfig({
 	integrations: [sitemap({ i18n: { defaultLocale: 'ko', locales: { ko: 'ko', en: 'en' } } })],
 	markdown: {
 		shikiConfig: {
-			theme: 'github-dark',
+			theme: 'vitesse-dark',
 		},
 	},
 });

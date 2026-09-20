@@ -11,20 +11,22 @@ export async function getStaticPaths() {
 
 	return entries.flatMap(({ locale, posts }) => {
 		const other = otherLocale(locale);
-		return posts.map((post) => {
+		// posts are newest first, so the next post to read is the one before it in the list
+		return posts.map((post, i) => {
 			const slug = postSlug(post);
 			// Fall back to the other locale's home when no translation exists
 			const alternate = localize(other, slugsByLocale.get(other)!.has(slug) ? `/posts/${slug}/` : '/');
 			return {
 				params: { locale: localeParam(locale), slug },
-				props: { locale, post, alternate },
+				props: { locale, post, alternate, newer: posts[i - 1], older: posts[i + 1] },
 			};
 		});
 	});
 }
 
-const { locale, post, alternate } = Astro.props;
+const { locale, post, alternate, newer, older } = Astro.props;
 const { Content } = await render(post);
+const t = ui[locale];
 ---
 
 <Base
@@ -42,5 +44,23 @@ const { Content } = await render(post);
 		</p>
 		<Content />
 	</article>
+	{
+		(newer || older) && (
+			<nav class="post-nav">
+				{older && (
+					<a href={localize(locale, `/posts/${postSlug(older)}/`)}>
+						<span class="dir">← {t.older}</span>
+						{older.data.title}
+					</a>
+				)}
+				{newer && (
+					<a class="next" href={localize(locale, `/posts/${postSlug(newer)}/`)}>
+						<span class="dir">{t.newer} →</span>
+						{newer.data.title}
+					</a>
+				)}
+			</nav>
+		)
+	}
 	<Comments locale={locale} />
 </Base>

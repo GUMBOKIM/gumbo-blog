@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import { DEFAULT_LOCALE } from '../i18n';
+---
+
+<Base locale={DEFAULT_LOCALE} title="404">
+	<section class="notfound">
+		<h1>404</h1>
+		<p>없는 페이지예요. 주소가 바뀌었거나 글이 지워졌을 수 있어요.</p>
+		<p class="more"><a href="/posts">글 목록으로 →</a></p>
+	</section>
+</Base>

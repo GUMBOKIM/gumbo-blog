@@ -1,6 +1,8 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Analytics from '../components/Analytics.astro';
 import '../styles/global.css';
+import { GOOGLE_VERIFICATION, NAVER_VERIFICATION } from '../consts';
 import { AUTHOR, DEFAULT_LOCALE, SITE_TITLE, ui, localize, otherLocale, switchLocale, type Locale } from '../i18n';
 
 interface Props {
@@ -70,6 +72,10 @@ const jsonLd = published
 		<meta property="og:site_name" content={SITE_TITLE} />
 		<meta property="og:locale" content={locale === 'ko' ? 'ko_KR' : 'en_US'} />
 		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+		{/* Ownership checks for Google Search Console and Naver Search Advisor */}
+		{GOOGLE_VERIFICATION && <meta name="google-site-verification" content={GOOGLE_VERIFICATION} />}
+		{NAVER_VERIFICATION && <meta name="naver-site-verification" content={NAVER_VERIFICATION} />}
+		<Analytics />
 		<ClientRouter />
 	</head>
 	<body>

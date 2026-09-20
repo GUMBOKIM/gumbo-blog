@@ -96,6 +96,8 @@ The nickname Gumbo comes from my time in the army. I spent a lot of my service w
 
 It doesn't have many users, but there's a service I've been running since 2021: a WMS (warehouse management system) used by the logistics company an acquaintance of mine runs.
 
+It doesn't run on any cloud. It lives on-premise on a machine I built myself, part by part. I started with docker compose and now run it on k3s.
+
 - **2021 · Eumseong plant** · Spring Boot + Thymeleaf\
   Inbound, outbound, and inventory management, plus client system integration (production plan lookup, automatic delivery cards)
 - **2025 · Seosan plant** · NestJS + React\
