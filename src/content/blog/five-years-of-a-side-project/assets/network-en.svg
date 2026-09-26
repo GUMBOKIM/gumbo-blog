@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648 200" role="img" aria-label="Request path: internet, ISP modem, router, then the server PC on the internal network. Setup steps: fixed internal IP on the server, port forwarding 80 and 443 on the router, domain pointing at the public IP." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- zones: outside (internet) and inside (LAN) -->
+  <g fill="none" stroke="#444c56" stroke-dasharray="5 4">
+    <rect x="10" y="20" width="148" height="170" rx="12"/>
+    <rect x="490" y="20" width="148" height="170" rx="12"/>
+  </g>
+  <text x="24" y="42" fill="#8b949e" font-size="12">Outside</text>
+  <text x="504" y="42" fill="#56d3a3" font-size="12">Internal network</text>
+
+  <!-- arrows -->
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M146,90 H176"/>
+    <path d="M306,90 H336"/>
+    <path d="M466,90 H496"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M184,90 l-9,-5 v10 z"/>
+    <path d="M344,90 l-9,-5 v10 z"/>
+    <path d="M504,90 l-9,-5 v10 z"/>
+  </g>
+
+  <!-- device cards -->
+  <g>
+    <rect x="24" y="58" width="120" height="64" rx="10" fill="#2b3139" stroke="#444c56"/>
+    <text x="84" y="87" text-anchor="middle" fill="#c9d1d9" font-size="15" font-weight="700">Internet</text>
+    <text x="84" y="107" text-anchor="middle" fill="#8b949e" font-size="12">Users</text>
+  </g>
+  <g>
+    <rect x="184" y="58" width="120" height="64" rx="10" fill="#2b3139" stroke="#444c56"/>
+    <text x="244" y="87" text-anchor="middle" fill="#c9d1d9" font-size="15" font-weight="700">ISP modem</text>
+    <text x="244" y="107" text-anchor="middle" fill="#8b949e" font-size="12">Public IP</text>
+  </g>
+  <g>
+    <rect x="344" y="58" width="120" height="64" rx="10" fill="#2b3139" stroke="#444c56"/>
+    <text x="404" y="87" text-anchor="middle" fill="#c9d1d9" font-size="15" font-weight="700">Router</text>
+    <text x="404" y="107" text-anchor="middle" fill="#8b949e" font-size="12">WAN ↔ LAN</text>
+  </g>
+  <g>
+    <rect x="504" y="58" width="120" height="64" rx="10" fill="#2b3139" stroke="#56d3a3"/>
+    <text x="564" y="87" text-anchor="middle" fill="#c9d1d9" font-size="15" font-weight="700">Server PC</text>
+    <text x="564" y="107" text-anchor="middle" fill="#8b949e" font-size="12">WMS</text>
+  </g>
+
+  <!-- setup steps, numbered like the list in the post -->
+  <g font-size="11">
+    <rect x="20" y="140" width="128" height="24" rx="12" fill="#30363d"/>
+    <text x="84" y="156" text-anchor="middle" fill="#e879b0">③ Domain</text>
+    <rect x="340" y="140" width="128" height="24" rx="12" fill="#30363d"/>
+    <text x="404" y="156" text-anchor="middle" fill="#e879b0">② Forward 80·443</text>
+    <rect x="500" y="140" width="128" height="24" rx="12" fill="#30363d"/>
+    <text x="564" y="156" text-anchor="middle" fill="#e879b0">① Fixed LAN IP</text>
+  </g>
+</svg>
