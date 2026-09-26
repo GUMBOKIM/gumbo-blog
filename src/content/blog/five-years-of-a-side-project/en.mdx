@@ -9,10 +9,24 @@ import network from './assets/network-en.svg?url';
 
 Since 2021 I've been building and running the WMS (warehouse management system) used at the factories of a logistics company run by someone I know. No cloud: it has been running on a single PC I put together myself for five years now.
 
-- **2021 · Eumseong plant**: Spring Boot + Thymeleaf, MariaDB. Inbound/outbound and inventory management, integration with the client's system
-- **2025 · Seosan plant**: NestJS + React, PostgreSQL. Mobile barcode scanning for inbound/outbound, inventory and stats dashboards, automatic data collection from client systems, automatic delivery slip issuing
+- **2021 · Eumseong plant**: Inbound/outbound and inventory management, integration with the client's system
+- **2025 · Seosan plant**: Mobile barcode scanning for inbound/outbound, inventory and stats dashboards, scraping and automation for client systems
 - **Server**: One PC. Started with a Ryzen 7 5700G / 32GB, now a Ryzen 7 7700 / 64GB
-- **How it runs**: Started with sh scripts, moved to docker compose, now k3s
+
+<div class="gallery">
+<div>
+
+![Crates stacked on racks inside the warehouse](./assets/warehouse-racks.jpg)
+<p class="caption">Inside the logistics warehouse</p>
+
+</div>
+<div>
+
+![Scanning a crate barcode with a mobile device](./assets/barcode-scan.jpg)
+<p class="caption">A barcode scanning demo</p>
+
+</div>
+</div>
 
 I started it because I wanted to try technologies like JPA that I couldn't use at my job back then. I also wanted to fix the hassles my acquaintance was dealing with.
 
@@ -52,7 +66,7 @@ The first thing I did was add Google Authenticator to the SSH login, so getting 
 
 These days deployment means building a Docker image and pushing it to the server.
 
-## The day the server went down
+## The scariest day
 
 Early on, the way I started the services was simple too. Back then it was a Spring Boot app and MariaDB, and I'd written an sh script that launched those processes and set it to run automatically at boot.
 
@@ -137,8 +151,15 @@ When people say the server died, they usually picture the server PC. But there w
 - **Router**: I bought a second unit of the exact same model. If it breaks, I can move the settings over and swap it right in.
 - **Modem**: It's the ISP's equipment, so there's no backup plan for it. That one's still on my to-do list.
 
+## What I liked about running it
+
+Being responsible for everything from start to finish was hard. From development itself to putting the server together, the network, deployments, and handling outages, there was no one to hand anything off to. But that was also what made it genuinely fun.
+
 ## Wrapping up
 
 I plan to keep trying out all sorts of things on this server. That said, someday I plan to move all of it to the cloud.
 
 One last thing: unless learning is really the point, just pay for the cloud. It's a real hassle.
+
+![Slumped over a desk, head in hand](./assets/head-in-hands.jpg)
+<p class="caption">Five years of running it, summed up</p>
