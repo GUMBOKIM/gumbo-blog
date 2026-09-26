@@ -64,8 +64,6 @@ Then one day I noticed traces of someone trying to log in over SSH. Of course pe
 
 The first thing I did was add Google Authenticator to the SSH login, so getting in took an OTP on top of the password. Later I dropped the SSH port forward entirely: now I connect to the internal network through the router's built-in OpenVPN first, then SSH in from there. The only ports forwarded to the server PC now are 80 and 443 for the web, plus one VPN port open on the router itself.
 
-These days deployment means building a Docker image and pushing it to the server.
-
 ## The scariest day
 
 Early on, the way I started the services was simple too. Back then it was a Spring Boot app and MariaDB, and I'd written an sh script that launched those processes and set it to run automatically at boot.
