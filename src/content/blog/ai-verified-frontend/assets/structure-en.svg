@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 236" role="img" aria-label="Structure: non-developers click in the panel, developers open and share ?cue= links, and AI and tests open those links. All three change that browser tab’s state, which holds the scenario for getCoupons (Empty), delay, time, and offline. When the app requests GET /coupons, the Empty scenario picked by the state answers from the MSW handlers in getCoupons.mock.ts, and the app shows its empty state." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <text x="84" y="16" font-size="11" fill="#8b949e" text-anchor="middle">Who picks, and how</text>
+
+  <!-- three ways in -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="14" y="26" width="140" height="52" rx="10"/>
+    <rect x="14" y="104" width="140" height="52" rx="10"/>
+    <rect x="14" y="182" width="140" height="52" rx="10"/>
+  </g>
+  <g fill="#c9d1d9" font-size="13" font-weight="700" text-anchor="middle">
+    <text x="84" y="48">Non-developers</text>
+    <text x="84" y="126">Developers</text>
+    <text x="84" y="204">AI · tests</text>
+  </g>
+  <g fill="#8b949e" font-size="11" text-anchor="middle">
+    <text x="84" y="66">Click in the panel</text>
+    <text x="84" y="144">Open · share ?cue= links</text>
+    <text x="84" y="222">Open ?cue= links</text>
+  </g>
+
+  <!-- all three write the same state -->
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M154,52 C174,52 174,118 190,118"/>
+    <path d="M154,130 H190"/>
+    <path d="M154,208 C174,208 174,142 190,142"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M196,118 l-7,-4 v8 z"/>
+    <path d="M196,130 l-7,-4 v8 z"/>
+    <path d="M196,142 l-7,-4 v8 z"/>
+  </g>
+
+  <!-- the one state -->
+  <rect x="196" y="70" width="140" height="120" rx="10" fill="#2b3139" stroke="#56d3a3"/>
+  <text x="266" y="93" font-size="13" font-weight="700" fill="#56d3a3" text-anchor="middle">This tab’s state</text>
+  <g font-size="11" fill="#c9d1d9">
+    <text x="210" y="118"><tspan fill="#8b949e">getCoupons</tspan> Empty</text>
+    <text x="210" y="138"><tspan fill="#8b949e">delay</tspan> 0</text>
+    <text x="210" y="158"><tspan fill="#8b949e">time</tspan> real clock</text>
+    <text x="210" y="178"><tspan fill="#8b949e">offline</tspan> off</text>
+  </g>
+
+  <!-- the state picks a scenario -->
+  <path d="M336,118 C356,118 354,137 372,137" stroke="#56d3a3" stroke-width="1.6" fill="none" stroke-dasharray="4 3"/>
+  <path d="M378,137 l-7,-4 v8 z" fill="#56d3a3"/>
+  <text x="357" y="110" font-size="10" fill="#56d3a3" text-anchor="middle">picks</text>
+
+  <!-- one handler file, one scenario per situation -->
+  <rect x="378" y="40" width="180" height="182" rx="10" fill="#2b3139" stroke="#444c56"/>
+  <text x="468" y="62" font-size="12" font-weight="700" fill="#c9d1d9" text-anchor="middle">getCoupons.mock.ts</text>
+  <text x="468" y="78" font-size="10" fill="#8b949e" text-anchor="middle">MSW handlers</text>
+  <g fill="#30363d" stroke="#444c56">
+    <rect x="392" y="92" width="152" height="26" rx="6"/>
+    <rect x="392" y="124" width="152" height="26" rx="6" fill="#1d3a31" stroke="#56d3a3"/>
+    <rect x="392" y="156" width="152" height="26" rx="6"/>
+    <rect x="392" y="188" width="152" height="26" rx="6"/>
+  </g>
+  <g font-size="12" fill="#c9d1d9" text-anchor="middle">
+    <text x="468" y="109">OK</text>
+    <text x="468" y="141" fill="#56d3a3" font-weight="700">Empty</text>
+    <text x="468" y="173">Many</text>
+    <text x="468" y="205">Server error</text>
+  </g>
+
+  <!-- the app asks, the picked scenario answers -->
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M620,86 H564"/>
+    <path d="M558,137 H614"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M558,86 l7,-4 v8 z"/>
+    <path d="M620,137 l-7,-4 v8 z"/>
+  </g>
+  <g font-size="10" fill="#8b949e" text-anchor="middle">
+    <text x="589" y="79">request</text>
+    <text x="589" y="130">response []</text>
+  </g>
+
+  <rect x="620" y="70" width="134" height="120" rx="10" fill="#2b3139" stroke="#444c56"/>
+  <text x="687" y="93" font-size="13" font-weight="700" fill="#c9d1d9" text-anchor="middle">App</text>
+  <text x="687" y="112" font-size="11" fill="#8b949e" text-anchor="middle">GET /coupons</text>
+  <rect x="634" y="124" width="106" height="52" rx="6" fill="#30363d"/>
+  <text x="687" y="155" font-size="11" fill="#c9d1d9" text-anchor="middle">No coupons</text>
+</svg>

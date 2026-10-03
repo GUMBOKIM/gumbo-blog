@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 228" role="img" aria-label="Feature development flow: write spec (PM); analyze, write code, developer check, deploy to dev (developer); QA (QA and designers); then deploy to prod, out to users. In the write-code step, AI loops between building and checking itself. Bottleneck 1 is the developer check: situations are hard to reproduce, so work goes back to building. Bottleneck 2 is QA: features are hard to check, so work goes back to building." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- both bottlenecks send the work back to 구현 -->
+  <g stroke="#e879b0" stroke-width="1.6" fill="none" stroke-dasharray="5 4">
+    <path d="M432,106 C432,62 262,58 262,82"/>
+    <path d="M620,106 C620,24 230,24 230,82"/>
+  </g>
+  <g fill="#e879b0">
+    <path d="M262,90 l-5,-9 h10 z"/>
+    <path d="M230,90 l-5,-9 h10 z"/>
+  </g>
+  <g font-size="11" fill="#e879b0">
+    <text x="442" y="80">Bottleneck 1</text>
+    <text x="442" y="94">hard to reproduce situations</text>
+    <text x="425" y="30" text-anchor="middle">Bottleneck 2 · hard to check features</text>
+  </g>
+
+  <!-- forward arrows -->
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M94,134 H102"/>
+    <path d="M188,134 H196"/>
+    <path d="M378,134 H386"/>
+    <path d="M472,134 H480"/>
+    <path d="M566,134 H574"/>
+    <path d="M660,134 H668"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M108,134 l-7,-4 v8 z"/>
+    <path d="M202,134 l-7,-4 v8 z"/>
+    <path d="M392,134 l-7,-4 v8 z"/>
+    <path d="M486,134 l-7,-4 v8 z"/>
+    <path d="M580,134 l-7,-4 v8 z"/>
+    <path d="M674,134 l-7,-4 v8 z"/>
+  </g>
+
+  <!-- the AI step -->
+  <rect x="202" y="90" width="176" height="88" rx="12" fill="#2b3139" stroke="#56d3a3"/>
+  <text x="290" y="109" font-size="12" font-weight="700" fill="#c9d1d9" text-anchor="middle">Write code</text>
+  <text x="290" y="169" font-size="12" font-weight="700" fill="#56d3a3" text-anchor="middle">AI</text>
+
+  <!-- stages -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="14" y="106" width="80" height="56" rx="10"/>
+    <rect x="108" y="106" width="80" height="56" rx="10"/>
+    <rect x="392" y="106" width="80" height="56" rx="10" stroke="#e879b0"/>
+    <rect x="486" y="106" width="80" height="56" rx="10"/>
+    <rect x="580" y="106" width="80" height="56" rx="10" stroke="#e879b0"/>
+    <rect x="674" y="106" width="80" height="56" rx="10"/>
+  </g>
+  <g fill="#c9d1d9" font-size="12" font-weight="700" text-anchor="middle">
+    <text x="54" y="138">Write spec</text>
+    <text x="148" y="138">Analyze</text>
+    <text x="432" y="131">Dev check</text>
+    <text x="526" y="138">Deploy dev</text>
+    <text x="620" y="131">QA</text>
+    <text x="714" y="138">Deploy prod</text>
+  </g>
+  <g font-size="11" fill="#e879b0" text-anchor="middle">
+    <text x="432" y="150">Bottleneck 1</text>
+    <text x="620" y="150">Bottleneck 2</text>
+  </g>
+
+  <!-- inside the AI step: 구현 ⇄ 자체 검증 -->
+  <g fill="#30363d" stroke="#444c56">
+    <rect x="214" y="118" width="64" height="32" rx="8"/>
+    <rect x="302" y="118" width="64" height="32" rx="8"/>
+  </g>
+  <g fill="#c9d1d9" font-size="12" font-weight="700" text-anchor="middle">
+    <text x="246" y="138">Build</text>
+    <text x="334" y="138" font-size="11">Self-check</text>
+  </g>
+  <path d="M278,128 H296" stroke="#8b949e" stroke-width="1.4" fill="none"/>
+  <path d="M302,128 l-6,-3.5 v7 z" fill="#8b949e"/>
+  <path d="M302,140 H284" stroke="#8b949e" stroke-width="1.4" fill="none"/>
+  <path d="M278,140 l6,-3.5 v7 z" fill="#8b949e"/>
+
+  <!-- who owns each stage -->
+  <g stroke="#444c56" stroke-width="1.4" fill="none">
+    <path d="M18,192 v6 H90 v-6"/>
+    <path d="M112,192 v6 H562 v-6"/>
+    <path d="M584,192 v6 H656 v-6"/>
+  </g>
+  <g fill="#8b949e" font-size="12" text-anchor="middle">
+    <text x="54" y="218">PM</text>
+    <text x="337" y="218">Developer</text>
+    <text x="620" y="218">QA · Designer</text>
+    <text x="714" y="184">→ to users</text>
+  </g>
+</svg>

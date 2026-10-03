@@ -1,0 +1,219 @@
+---
+title: Handing Frontend Checks Over to AI with MSW
+description: I gave each situation a name. Now the AI checks the screen itself, and I send QA and designers a link instead of explaining.
+category: dev
+date: 2026-10-04
+---
+
+import devFlow from './assets/dev-flow-en.svg?url';
+import structure from './assets/structure-en.svg?url';
+import aiVerify from './assets/ai-verify-en.svg?url';
+import qaBeforeAfter from './assets/qa-before-after-en.svg?url';
+import situations from './assets/situations-en.svg?url';
+import devFlowAfter from './assets/dev-flow-after-en.svg?url';
+
+At work I'm building a new product, and these days AI writes a large share of the frontend code. Hand it the requirements and a screen appears in no time. Sometimes I leave several features with it at once and go do something else.
+
+Features didn't start shipping much faster, though. The code came quickly, but checking that the code was right was still a person's job. The bottleneck had only moved from writing code to checking it.
+
+This post is about what I changed to hand that checking to AI, and what it did to development speed and the cost of communication.
+
+## How a feature ships
+
+A feature gets built roughly like this.
+
+<img class="diagram" src={devFlow} alt="Feature development flow: write spec (PM); analyze, write code, developer check, deploy to dev (developer); QA (QA and designers); then deploy to prod, out to users. In the write-code step, AI loops between building and checking itself. Bottleneck 1 is the developer check: situations are hard to reproduce, so work goes back to building. Bottleneck 2 is QA: features are hard to check, so work goes back to building." width="768" height="228" />
+
+The PM writes the requirements, and a developer analyzes them, writes the code, checks it and deploys it to the dev server. Once QA and designers have checked it, it goes to prod and out to users.
+
+What AI changed is the "write code" box in the middle. The AI builds, checks itself with tests and type checks, and fixes what's wrong, looping on its own. That box really did get faster.
+
+But there are two places after it where work comes back: when the developer checks it, and when QA checks it. The reason is the same in both. **It's hard to set up the situation you want to check.**
+
+## Bottleneck 1: situations are hard to reproduce
+
+Take a coupon list screen. The requirements:
+
+- Show the coupons as a list.
+- With more than ten, show the first ten and a More button.
+- With no coupons at all, show the empty state.
+- Mark an expired coupon as "Expired".
+
+To know this screen is right, you have to see the same screen in at least these six situations.
+
+<img class="diagram" src={situations} alt="The same coupon list screen in six situations: a few coupons (normal list), none at all (empty state), more than 10 (10 coupons and a More button), some expired (an Expired badge on some coupons, which needs the current time to be past their expiry), server error (a could-not-load message and a Retry button), slow response (loading placeholders)." width="768" height="466" />
+
+Setting these up for real is hard.
+
+**The backend isn't there yet.** It's a new product, so the backend is being built at the same time. We agree on the response shape up front, but the real API often lands later than the frontend. So I build the whole screen and only wire it up properly once the API exists, and integration testing always piles up at the very end.
+
+**Even with a backend, setting up these situations is hard.** To see the empty state I'd have to delete every coupon on my account, and to get past ten I'd have to issue a pile of them. On a shared dev server that breaks someone else's work. Errors and slow responses can be faked with DevTools, but only by hand, every time, and not in a form I can pass to someone else.
+
+**The AI can't see these situations.** The AI writes the code and says "Done." The types check and the tests pass. But nobody knows whether the screen really shows the empty state when there are no coupons until that situation is actually on screen. That check was still up to me.
+
+Leave several features with the AI at once and there's even more to check. Fixing the coupon screen breaks the points screen next to it: a regression. Requirements also get fuzzy where they overlap. Say a new requirement arrives later: "move expired coupons to the end of the list." With twelve coupons, three of them expired, do the expired ones belong in the first ten, or behind the More button? You only notice questions like that once the situation is on screen, and only then can you ask the PM.
+
+Design was different. With Figma MCP, the AI reads the design directly, compares it with the screen that comes up, and fixes spacing and color. The AI could verify how a single screen looks on its own, so why not how it behaves across situations?
+
+## Bottleneck 2: features are hard to check
+
+Once it's on the dev server, QA and designers check that it works as specified. The same problem comes back.
+
+QA needs to check the same coupon situations. But the dev server only has whatever data it has right now. When QA says "I want to check what it looks like with no coupons," someone has to set that up, and that someone is usually a developer. Same when a designer says "I want to see whether the error screen matches the design."
+
+So the easy situations get checked, and the hard ones tend to slip through as "the developer must have looked at that." That's where the bugs come from.
+
+And when someone does find something odd, it's hard to hand over the situation as it was.
+
+> The expired label on the coupon list looks wrong.
+
+A message like that starts with questions. Which account, how many coupons, when did you see it? By then the data has changed or the clock has moved on, and often it looks fine when you open it again. If you can't reproduce it you can't fix it, or confirm the fix. Only after a few rounds of messages do we finally look at the same screen.
+
+## In the end, the only way to change the situation was editing code
+
+To stop waiting for the backend, I reached for MSW. MSW intercepts the requests the browser sends and answers with responses you defined in advance. Write handlers that follow the agreed response shape and you can build the screen all the way through with no API.
+
+```ts
+http.get('/coupons', () => HttpResponse.json(coupons))
+```
+
+I'd used MSW four years ago too. Back then I had no AI to help, so I wrote every handler and all the mock data by hand, and that took a lot of time. Every new API meant a new handler, and every change to a response shape meant fixing the mock data along with it. Now I hand the AI the agreed response shape and the handler comes right back. Writing them takes almost no time anymore.
+
+That took care of waiting for the backend. But this handler gives **only one response at a time**. To see the empty state I change `coupons` to `[]`; to see an error I change it to return a 500. When I'm done I have to change it back.
+
+**The way I worked, changing the situation meant editing handler code, and that was the common cause of both bottlenecks.**
+
+- **It's hard to hand off to the AI.** Editing a handler to check something and reverting it afterwards becomes a task of its own. Forget to revert and that's a bug in itself. And to check that last week's empty state still works, you have to make the same edit again.
+- **It's hard to share between people.** QA and designers can't edit the code. And even a developer can only describe "that situation" in words.
+
+## I gave each situation a name
+
+The fix is simple. Give an API several responses and name each one. I'll call a named response a scenario.
+
+```ts
+export default {
+  id: 'getCoupons',
+  label: 'Coupon list',
+  path: '/coupons',
+  handler: [
+    { scenario: 'OK', handler: http.get('/coupons', () => HttpResponse.json(coupons)) },
+    { scenario: 'Empty', handler: http.get('/coupons', () => HttpResponse.json([])) },
+    { scenario: 'Many', handler: http.get('/coupons', () => HttpResponse.json(manyCoupons)) },
+    { scenario: 'Server error', handler: http.get('/coupons', () => new HttpResponse(null, { status: 500 })) },
+  ],
+}
+```
+
+Once a situation has a name, it has a link. The six situations from earlier now each open from one link, like these.
+
+```text
+/?cue=getCoupons:Empty                         no coupons at all
+/?cue=getCoupons:Many                          more than ten coupons
+/?cue=getCoupons:Server error,delay:1500       an error after 1.5 seconds
+/?cue=time:2026-03-01T00:00:00Z                after the coupons' expiry date
+/?cue=offline                                  API requests fail like a network error
+```
+
+Change the link, not the code, and the situation changes. It isn't only server responses: network conditions like delay and offline, and the current time, are picked the same way. No more waiting for a coupon's expiry date to pass to see the expired label.
+
+Writing separate mock data for every scenario sounds like work, but that isn't a burden either. The AI writes it from the requirements, along with the handler.
+
+The library I built on this structure is [cuesheet](https://github.com/GUMBOKIM/cuesheet).
+
+<img class="diagram" src={structure} alt="Structure: non-developers click in the panel, developers open and share ?cue= links, and AI and tests open those links. All three change that browser tab’s state, which holds the scenario for getCoupons (Empty), delay, time, and offline. When the app requests GET /coupons, the Empty scenario picked by the state answers from the MSW handlers in getCoupons.mock.ts, and the app shows its empty state." width="768" height="236" />
+
+- **One file per API.** Each API gets its own file, like `getCoupons.mock.ts`, holding an array of MSW handlers, one per scenario.
+- **One state per tab, changed in whatever way suits the person.** Which scenario each API answers with, plus delay, time and offline, all live in one state, and every request the app sends picks its response from that state.
+  - Non-developers like QA, designers and PMs pick with a click in the panel in the corner of the screen. They don't need to know the code or the link syntax, and the panel's Copy URL button copies what they picked as a link.
+  - Developers share the situation to check as a `?cue=` link. Instead of "please check the empty state," I send `/?cue=getCoupons:Empty`.
+  - AI and tests open the same links. To change the situation on a page that's already open, they use `window.__cuesheet__`.
+
+![The cuesheet example app. With the coupon list API set to the Empty scenario in the panel on the left, the app on the right shows its no-coupons empty state. At the bottom of the panel is the Copy URL button that copies the link.](./assets/panel.png)
+
+A change to the state applies from the next request, so the app is wired to refetch its data when you change the situation in the panel.
+
+I load cuesheet only on the dev server and keep it out of prod builds. The situation you pick only applies inside your own browser tab, so even on a shared dev server, QA opening an error situation doesn't change anyone else's screen. To see the real dev API, turn it off in the panel or open the page with `?cue=off`.
+
+## The AI verifies its own work: development speed
+
+I've given the AI Playwright MCP and Chrome DevTools MCP. Both let the AI open a browser, read the screen and click on it. Figma MCP lets the AI read the design; these tools and the links let it see how the screen behaves across situations. For the link syntax, point your project's agent instructions at the agent guide that ships in the cuesheet package (`node_modules/cuesheet/AGENTS.md`) and the AI takes it from there.
+
+Now when I hand the AI a feature, I give it the situations to check along with the requirements. Say the fuzzy expired-coupon ordering from earlier was settled with the PM as "behind the More button," and the `Many` scenario has fifteen coupons, three of them already expired. Then I'd hand it over like this.
+
+```text
+Add "move expired coupons to the end" to the coupon list. Keep expired coupons out of the first ten; put them behind More.
+When you're done, open the links below to check, and run the existing tests too.
+- /?cue=getCoupons:Empty    check that the empty-state text shows
+- /?cue=getCoupons:Many     no expired coupons in the first ten; after More, the three expired ones come last
+```
+
+After writing the code, the AI opens the links one by one, reads the screen, clicks More, and checks for itself. When something's wrong it fixes it and opens them again. The loop inside the "write code" box in the first diagram, which used to stop at tests and type checks, now reaches the actual screen.
+
+<img class="diagram" src={aiVerify} alt="AI verification loop: the AI gets the requirements and the links to check, and learns the link syntax from AGENTS.md. Through browser tools (Playwright MCP, Chrome DevTools MCP) it opens the links and reads the screen. The Empty link shows the empty-state text: pass. The Many link shows only valid coupons and a More button on the first page: pass. After clicking More, expired coupons are mixed in instead of at the end: fail. On a failure the AI fixes the code and opens the links again." width="768" height="284" />
+
+I took care of a few things so the AI doesn't get lost.
+
+- **The AI can ask what it's allowed to change.** `window.__cuesheet__.getCatalog()` returns every API and its scenarios, so there's no digging through the app's code.
+- **A wrong name comes back with the valid ones.** Type `Empty` as `Emtpy`, say, and the page still opens with just that entry skipped, leaving this warning in the console. Looking only at the screen you could miss that the wrong thing opened, but with Chrome DevTools MCP reading the console, the AI sees the warning, fixes the name and opens it again.
+
+  ```text
+  [cuesheet] handler 'getCoupons' has no scenario 'Emtpy'. Available: OK, Empty, Many, Server error
+  ```
+
+- **The same link sets up the same conditions.** The scenario, delay, time and offline all live in the link, and unless the delay is given as a range, nothing is random. As long as we're on the same app and handlers, the AI and I check the screen under the same conditions.
+
+Once the checks pass, I have the AI add a test that opens the same link. The test uses the very handlers I develop against, so there are no separate test mocks to maintain.
+
+```ts
+await page.goto('/?cue=getCoupons:Empty')
+await expect(page.getByText('No coupons')).toBeVisible()
+
+await page.goto('/?cue=getCoupons:Many')
+await expect(page.getByRole('listitem')).toHaveCount(10)
+await expect(page.getByRole('button', { name: 'More' })).toBeVisible()
+```
+
+In practice, what this catches most is regressions. With several features in flight, fixing one thing breaks another screen, and the AI finds it first by reopening the existing links and running the tests.
+
+My own job changed too. I used to bring up each screen one by one to find and check things; now I read what the AI checked and open only the screens I need.
+
+## Sharing with one link: communication cost
+
+Links work between people just as well.
+
+When QA asks "What does it look like with no coupons?", I now send a link. Nobody has to set up the situation. And with the panel there, QA and designers try things out themselves: error screens, slow responses, even offline, all without a developer.
+
+<img class="diagram" src={qaBeforeAfter} alt="How QA checks a situation, before and after. Before: QA asks what the screen looks like with no coupons, a developer edits data or handlers, shows it over a screen share or screenshot, and only then QA checks it. Another situation means starting over. After: QA, designers, and PMs click in the panel or open a link they were sent, and check the empty state, errors, slow responses, and offline right away without a developer." width="768" height="236" />
+
+Bug reports changed too. QA clicks Copy URL in the panel and sends the link along.
+
+> The expired label on the coupon list looks wrong.
+> `/?cue=getCoupons:Many,time:2026-03-01T00:00:00Z`
+
+Open the link and you see the screen with the reported scenario and time. There's no need to ask how many coupons there were or when they saw it. After the fix, I send the same link back and ask them to check.
+
+I use links with designers too. A design has separate frames for screens you rarely see, like the empty state, errors and loading. To get those reviewed I used to send screenshots, or share my screen and set up each situation one at a time. Now I send a link for each frame in the design.
+
+```text
+Empty state  /?cue=getCoupons:Empty
+Error        /?cue=getCoupons:Server error
+Loading      /?cue=getCoupons:OK,delay:30000     (delays the response 30 seconds to show loading)
+```
+
+The designer opens the link and puts it next to the design. If something needs fixing, they send it back with the link. When they say "the icon and text are too close on this screen," there's no question which screen "this screen" is. It's the same when the PM asks "What should this case look like?": instead of explaining in words, I send a link and we talk while looking at that screen.
+
+## What's left
+
+Not everything is solved. A mock is still a mock. Scenarios are built from the agreed response shape, so if the real server answers differently, a screen that passed against the mock can still break. Integration testing against the real API is still needed. But with each scenario's screen behavior already checked, integration can focus on what only shows up against the real API: authentication, permissions, the actual response shape.
+
+Deciding which situations need checking, without missing any, is also still a person's job. I review the AI's list of scenarios myself for anything missing.
+
+## Wrapping up
+
+AI made writing code faster, but the way we checked stayed the same, so the bottleneck moved to checking. Developers couldn't reproduce situations and QA couldn't check features, because the only way to change the situation was editing code.
+
+Once situations had names and could be picked by link, two things changed. The AI checks the screen itself without touching the code, so development got faster; and people see the same screen from one link, so fewer messages go back and forth. The flow from the first diagram now looks like this.
+
+<img class="diagram" src={devFlowAfter} alt="The flow after: in the write-code step, AI loops between building and checking the screen through links. The developer check only reviews what the AI found, and QA checks directly with the panel and links. Bug reports come with a link, and the work goes back to building. No bottleneck marks." width="768" height="228" />
+
+You can try this approach right away with [cuesheet](https://github.com/GUMBOKIM/cuesheet). Keep the MSW handlers you already have; only the startup code changes. If you try it and something gets in your way, or you have an idea, please leave it in the [issues](https://github.com/GUMBOKIM/cuesheet/issues).

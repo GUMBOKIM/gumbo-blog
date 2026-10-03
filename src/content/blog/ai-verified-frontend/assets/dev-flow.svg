@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 228" role="img" aria-label="기능 개발 흐름: 요구사항 작성(PM), 요구사항 분석·코드 작성·개발자 검증·dev 배포(개발자), QA(QA·디자이너), 그리고 prod 배포로 유저에게 간다. 코드 작성은 AI가 구현과 자체 검증을 오가며 한다. 병목 1은 개발자 검증으로, 상황을 재현하기 어려워 구현으로 돌아간다. 병목 2는 QA로, 기능을 확인하기 어려워 구현으로 돌아간다." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- both bottlenecks send the work back to 구현 -->
+  <g stroke="#e879b0" stroke-width="1.6" fill="none" stroke-dasharray="5 4">
+    <path d="M432,106 C432,62 262,58 262,82"/>
+    <path d="M620,106 C620,24 230,24 230,82"/>
+  </g>
+  <g fill="#e879b0">
+    <path d="M262,90 l-5,-9 h10 z"/>
+    <path d="M230,90 l-5,-9 h10 z"/>
+  </g>
+  <g font-size="11" fill="#e879b0">
+    <text x="442" y="86">병목 1 · 상황 재현이 어려움</text>
+    <text x="425" y="30" text-anchor="middle">병목 2 · 기능 확인이 어려움</text>
+  </g>
+
+  <!-- forward arrows -->
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M94,134 H102"/>
+    <path d="M188,134 H196"/>
+    <path d="M378,134 H386"/>
+    <path d="M472,134 H480"/>
+    <path d="M566,134 H574"/>
+    <path d="M660,134 H668"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M108,134 l-7,-4 v8 z"/>
+    <path d="M202,134 l-7,-4 v8 z"/>
+    <path d="M392,134 l-7,-4 v8 z"/>
+    <path d="M486,134 l-7,-4 v8 z"/>
+    <path d="M580,134 l-7,-4 v8 z"/>
+    <path d="M674,134 l-7,-4 v8 z"/>
+  </g>
+
+  <!-- the AI step -->
+  <rect x="202" y="90" width="176" height="88" rx="12" fill="#2b3139" stroke="#56d3a3"/>
+  <text x="290" y="109" font-size="12" font-weight="700" fill="#c9d1d9" text-anchor="middle">코드 작성</text>
+  <text x="290" y="169" font-size="12" font-weight="700" fill="#56d3a3" text-anchor="middle">AI</text>
+
+  <!-- stages -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="14" y="106" width="80" height="56" rx="10"/>
+    <rect x="108" y="106" width="80" height="56" rx="10"/>
+    <rect x="392" y="106" width="80" height="56" rx="10" stroke="#e879b0"/>
+    <rect x="486" y="106" width="80" height="56" rx="10"/>
+    <rect x="580" y="106" width="80" height="56" rx="10" stroke="#e879b0"/>
+    <rect x="674" y="106" width="80" height="56" rx="10"/>
+  </g>
+  <g fill="#c9d1d9" font-size="12" font-weight="700" text-anchor="middle">
+    <text x="54" y="138">요구사항 작성</text>
+    <text x="148" y="138">요구사항 분석</text>
+    <text x="432" y="131">개발자 검증</text>
+    <text x="526" y="138">dev 배포</text>
+    <text x="620" y="131">QA</text>
+    <text x="714" y="138">prod 배포</text>
+  </g>
+  <g font-size="11" fill="#e879b0" text-anchor="middle">
+    <text x="432" y="150">병목 1</text>
+    <text x="620" y="150">병목 2</text>
+  </g>
+
+  <!-- inside the AI step: 구현 ⇄ 자체 검증 -->
+  <g fill="#30363d" stroke="#444c56">
+    <rect x="214" y="118" width="64" height="32" rx="8"/>
+    <rect x="302" y="118" width="64" height="32" rx="8"/>
+  </g>
+  <g fill="#c9d1d9" font-size="12" font-weight="700" text-anchor="middle">
+    <text x="246" y="138">구현</text>
+    <text x="334" y="138" font-size="11">자체 검증</text>
+  </g>
+  <path d="M278,128 H296" stroke="#8b949e" stroke-width="1.4" fill="none"/>
+  <path d="M302,128 l-6,-3.5 v7 z" fill="#8b949e"/>
+  <path d="M302,140 H284" stroke="#8b949e" stroke-width="1.4" fill="none"/>
+  <path d="M278,140 l6,-3.5 v7 z" fill="#8b949e"/>
+
+  <!-- who owns each stage -->
+  <g stroke="#444c56" stroke-width="1.4" fill="none">
+    <path d="M18,192 v6 H90 v-6"/>
+    <path d="M112,192 v6 H562 v-6"/>
+    <path d="M584,192 v6 H656 v-6"/>
+  </g>
+  <g fill="#8b949e" font-size="12" text-anchor="middle">
+    <text x="54" y="218">PM</text>
+    <text x="337" y="218">개발자</text>
+    <text x="620" y="218">QA · 디자이너</text>
+    <text x="714" y="184">→ 유저에게</text>
+  </g>
+</svg>
