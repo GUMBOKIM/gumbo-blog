@@ -16,13 +16,13 @@ Since 2021 I've been building and running the WMS (warehouse management system) 
 <div class="gallery">
 <div>
 
-![Crates stacked on racks inside the warehouse](./assets/warehouse-racks.jpg)
+![Boxes stacked on racks inside the warehouse](./assets/warehouse-racks.jpg)
 <p class="caption">Inside the logistics warehouse</p>
 
 </div>
 <div>
 
-![Scanning a crate barcode with a mobile device](./assets/barcode-scan.jpg)
+![Scanning a box's barcode with a mobile device](./assets/barcode-scan.jpg)
 <p class="caption">A barcode scanning demo</p>
 
 </div>
@@ -70,7 +70,7 @@ Early on, the way I started the services was simple too. Back then it was a Spri
 
 Then the factory lost power. Once the power came back I asked someone on site to press the server's power button, but something got tangled in the startup order and the app didn't come up.
 
-The site called to say "the system isn't working." They got through that day by recording everything in Excel, and as soon as I left work I drove to the Eumseong plant myself and brought the server back up.
+The site called to say "the system isn't working." They got through that day by recording everything in Excel, and as soon as I left work I went to the Eumseong plant myself and brought the server back up.
 
 After that I threw out the sh script and moved to docker compose. I put MariaDB and the Spring Boot app in one config file and set a `restart` policy on each container. That way, once Docker comes up after a boot, the containers come back on their own, and if the app starts before the DB and fails, the restart policy brings it back up. I used this setup until I moved to k3s while building the Seosan plant system in 2025.
 
@@ -159,5 +159,5 @@ I plan to keep trying out all sorts of things on this server. That said, someday
 
 One last thing: unless learning is really the point, just pay for the cloud. It's a real hassle.
 
-![Slumped over a desk, head in hand](./assets/head-in-hands.jpg)
+![Slumped over a desk, head in hands](./assets/head-in-hands.jpg)
 <p class="caption">Five years of running it, summed up</p>

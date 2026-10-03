@@ -1,5 +1,5 @@
 ---
-title: Starting a blog
+title: Starting a Blog
 description: To sort out my thoughts, and to look back on them later
 category: life
 date: 2026-09-19

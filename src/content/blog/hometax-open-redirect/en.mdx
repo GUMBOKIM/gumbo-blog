@@ -1,5 +1,5 @@
 ---
-title: "Reporting a Hometax bug: from open redirect to CVE and CWE"
+title: "Reporting a Hometax Bug: From Open Redirect to CVE and CWE"
 description: What an open redirect is, where to report a security vulnerability in Korea, and the difference between CVE and CWE
 category: dev
 date: 2026-09-20
@@ -8,7 +8,7 @@ date: 2026-09-20
 import diagram from './assets/cve-cwe.svg?url';
 import reply from './assets/hometax-response.png?url';
 
-A coworker, SH, ran into some odd behavior in the Hometax app while working. "Shouldn't we report this?" I said — and he told me he doesn't bother with tedious stuff like that. So I decided to give it a try in his place.
+A coworker, SH, ran into some odd behavior in the Hometax app while working. "Shouldn't we report this?" I said — and they told me they don't bother with tedious stuff like that. So I decided to file it myself.
 
 Getting ready to file it, I found myself looking into things like "where do you even report this?" and "I've heard of CVE, but what's CWE?" Here are my notes.
 
@@ -73,6 +73,6 @@ Even just telling CVE, CWE, and CVSS apart gives you the frame: what kind of mis
 
 ## Wrapping up
 
-I didn't find anything remarkable, and I didn't find it — I just reported what a coworker happened to notice. Still, having gone through the experience once of not shrugging off a "that's weird" and instead routing it to the right channel, I think I'll hesitate less next time. When I write code that takes a link and sends someone somewhere in a service of my own, I think I'll remember to validate the destination. And when something looks off, I won't let it slide — on top of the tools I already use, I'll have an AI take a pass at it too.
+It wasn't a big find, and it wasn't even mine — I just reported what a coworker happened to notice. Still, having gone through the experience once of not shrugging off a "that's weird" and instead routing it to the right channel, I think I'll hesitate less next time. When I write code that takes a link and sends someone somewhere in a service of my own, I think I'll remember to validate the destination. And when something looks off, I won't let it slide — on top of the tools I already use, I'll have an AI take a pass at it too.
 
 As an aside: sadly, there was no reward — just a single "resolved" reply from the tax service. Then again, that isn't why I did it.
