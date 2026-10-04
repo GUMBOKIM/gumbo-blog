@@ -134,7 +134,7 @@ A change to the state applies from the next request, so the app is wired to refe
 
 I load cuesheet only on the dev server and keep it out of prod builds. The situation you pick only applies inside your own browser tab, so even on a shared dev server, QA opening an error situation doesn't change anyone else's screen. To see the real dev API, turn it off in the panel or open the page with `?cue=off`.
 
-## The AI verifies its own work: development speed
+## Now the AI checks the screen itself
 
 I've given the AI Playwright MCP and Chrome DevTools MCP. Both let the AI open a browser, read the screen and click on it. Figma MCP lets the AI read the design; these tools and the links let it see how the screen behaves across situations. For the link syntax, point your project's agent instructions at the agent guide that ships in the cuesheet package (`node_modules/cuesheet/AGENTS.md`) and the AI takes it from there.
 
@@ -177,7 +177,7 @@ In practice, what this catches most is regressions. With several features in fli
 
 My own job changed too. I used to bring up each screen one by one to find and check things; now I read what the AI checked and open only the screens I need.
 
-## Sharing with one link: communication cost
+## Now I send a link instead of explaining
 
 Links work between people just as well.
 
