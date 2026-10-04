@@ -105,10 +105,15 @@ const jsonLd = published
 				const big = dialog?.querySelector('img');
 				if (!dialog || !big) return;
 				dialog.onclick = () => dialog.close();
-				for (const img of document.querySelectorAll<HTMLImageElement>('.about img:not(.logo), article img:not(.diagram)')) {
+				for (const img of document.querySelectorAll<HTMLImageElement>('.about img:not(.logo), article img')) {
 					img.onclick = () => {
 						big.src = img.currentSrc || img.src;
 						big.alt = img.alt;
+						// A diagram is drawn at a fixed width; open it at that width so a phone can pan
+						// across it instead of squinting at a shrunk-to-fit copy.
+						const drawn = img.classList.contains('diagram') ? img.getAttribute('width') : null;
+						dialog.classList.toggle('wide', Boolean(drawn));
+						big.style.width = drawn ? `${drawn}px` : '';
 						dialog.showModal();
 					};
 				}

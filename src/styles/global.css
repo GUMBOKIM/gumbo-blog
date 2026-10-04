@@ -401,11 +401,10 @@ article img {
 	cursor: zoom-in;
 }
 
-/* Diagrams span the full column and aren't zoomable photos */
+/* Diagrams span the full column; they open at their drawn width rather than as a photo */
 article img.diagram {
 	max-width: 100%;
 	border-radius: 0;
-	cursor: default;
 }
 
 /* Collapsible supplementary evidence (e.g. the official reply) */
@@ -490,6 +489,19 @@ details.evidence img {
 	width: auto;
 	height: auto;
 	border-radius: 0.5em;
+}
+
+/* A diagram keeps its drawn width even when that is wider than the screen, so its
+   labels stay readable and the box pans instead of shrinking the whole drawing. */
+.lightbox.wide img {
+	max-width: none;
+	max-height: none;
+	border-radius: 0;
+}
+
+.lightbox.wide {
+	overflow: auto;
+	overscroll-behavior: contain;
 }
 
 .notfound {
