@@ -69,9 +69,9 @@ And when someone does find something odd, it's hard to hand over the situation a
 
 A message like that starts with questions. Which account, how many coupons, when did you see it? By then the data has changed or the clock has moved on, and often it looks fine when you open it again. If you can't reproduce it you can't fix it, or confirm the fix. Only after a few rounds of messages do we finally look at the same screen.
 
-## In the end, the only way to change the situation was editing code
+## I brought in MSW, but checking the client worked the same as before
 
-To stop waiting for the backend, I reached for MSW. MSW intercepts the requests the browser sends and answers with responses you defined in advance. Write handlers that follow the agreed response shape and you can build the screen all the way through with no API.
+To build the frontend on its own, fast, without waiting for the backend, I brought in MSW. MSW intercepts the requests the browser sends and answers with responses you defined in advance. Write handlers that follow the agreed response shape and you can build the screen all the way through with no API.
 
 ```ts
 http.get('/coupons', () => HttpResponse.json(coupons))
