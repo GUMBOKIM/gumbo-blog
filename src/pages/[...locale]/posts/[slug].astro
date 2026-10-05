@@ -40,7 +40,7 @@ const t = ui[locale];
 		<h1 class="post-title">{post.data.title}</h1>
 		<p class="post-date">
 			<time datetime={post.data.date.toISOString()}>{formatDate(locale, post.data.date)}</time>
-			· <a href={localize(locale, `/posts/${post.data.category}`)}>{ui[locale][post.data.category]}</a>
+			· <a href={localize(locale, `/posts/${post.data.category}/`)}>{ui[locale][post.data.category]}</a>
 			· {readingTime(post.body ?? '', locale)}{locale === 'ko' ? '분' : ' min read'}
 		</p>
 		<Content />
