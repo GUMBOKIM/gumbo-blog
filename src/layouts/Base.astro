@@ -25,7 +25,7 @@ const isAbout = current === aboutPath;
 const isPosts = current === postsPath || current.startsWith(`${postsPath}/`);
 const pageTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const author = { '@type': 'Person', name: AUTHOR, url: new URL(localize(locale, '/about'), Astro.site).href };
+const author = { '@type': 'Person', name: AUTHOR, url: new URL(localize(locale, '/about/'), Astro.site).href };
 const jsonLd = published
 	? {
 			'@context': 'https://schema.org',
@@ -83,8 +83,8 @@ const jsonLd = published
 			<header class="site-header">
 				<nav class="menu">
 					<a href={localize(locale, '/')} class="logo">{SITE_TITLE}</a>
-					<a href={aboutPath} data-label="about" aria-current={isAbout ? 'page' : undefined}>about</a>
-					<a href={postsPath} data-label="posts" aria-current={isPosts ? 'page' : undefined}>posts</a>
+					<a href={`${aboutPath}/`} data-label="about" aria-current={isAbout ? 'page' : undefined}>about</a>
+					<a href={`${postsPath}/`} data-label="posts" aria-current={isPosts ? 'page' : undefined}>posts</a>
 				</nav>
 				<nav class="lang">
 					<a href={alternate} lang={other}>{ui[locale].other}</a>

@@ -45,6 +45,6 @@ const posts = (await getPosts(locale)).slice(0, HOME_POST_LIMIT);
 				))
 			}
 		</ul>
-		<p class="more"><a href={localize(locale, '/posts')}>{t.allPosts} →</a></p>
+		<p class="more"><a href={localize(locale, '/posts/')}>{t.allPosts} →</a></p>
 	</section>
 </Base>
