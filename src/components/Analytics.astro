@@ -14,11 +14,9 @@ const gaId = import.meta.env.PUBLIC_GA_ID;
 					dataLayer.push(arguments);
 				}
 				gtag('js', new Date());
+				// config sends the first page view, and GA4 enhanced measurement ("page changes based on
+				// browser history events") picks up ClientRouter navigations, so no manual page_view here
 				gtag('config', gaId);
-				// ClientRouter swaps pages without a reload, so report those as page views too
-				document.addEventListener('astro:page-load', () => {
-					gtag('event', 'page_view', { page_location: location.href, page_title: document.title });
-				});
 			</script>
 		</>
 	)
