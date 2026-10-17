@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 226" role="img" aria-label="How the AI verifies on a real device. 1. Set up state: put a mock session and an MSW scenario in localStorage and reload. 2. Act: click buttons, type and navigate, all by command. 3. Check: read DOM text and element sizes. The Android keyboard is checked with dumpsys input_method; for the iPhone keyboard the AI sends an alert and I check by hand. 4. Verdict: if it passes, done; if it fails, the AI fixes the code, rebuilds and reinstalls, and starts over." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- steps -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="14" y="20" width="172" height="128" rx="12"/>
+    <rect x="206" y="20" width="172" height="128" rx="12"/>
+    <rect x="398" y="20" width="172" height="128" rx="12"/>
+    <rect x="590" y="20" width="164" height="128" rx="12"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#56d3a3">
+    <text x="30" y="44">1</text>
+    <text x="222" y="44">2</text>
+    <text x="414" y="44">3</text>
+    <text x="606" y="44">4</text>
+  </g>
+  <g font-size="14" font-weight="700" fill="#c9d1d9">
+    <text x="44" y="44">Set up state</text>
+    <text x="236" y="44">Act</text>
+    <text x="428" y="44">Check</text>
+    <text x="620" y="44">Verdict</text>
+  </g>
+
+  <g font-size="11" fill="#c9d1d9">
+    <text x="30" y="72">Put a mock session</text>
+    <text x="30" y="90">+ MSW scenario in</text>
+    <text x="30" y="108">localStorage, reload</text>
+    <text x="30" y="134" fill="#8b949e" font-size="10">No login, no real data</text>
+
+    <text x="222" y="72">Click buttons</text>
+    <text x="222" y="90">Focus inputs, type</text>
+    <text x="222" y="108">Navigate</text>
+    <text x="222" y="134" fill="#8b949e" font-size="10">All by command</text>
+
+    <text x="414" y="72">DOM text · element sizes</text>
+    <text x="414" y="94" fill="#8b949e" font-size="10">Is the keyboard up?</text>
+    <text x="414" y="112" font-size="10">Android: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">dumpsys</tspan></text>
+    <text x="414" y="128" font-size="10">iPhone: alert → I check</text>
+
+    <text x="606" y="74"><tspan fill="#56d3a3" font-weight="700">✓</tspan> Pass: done</text>
+    <text x="606" y="100"><tspan fill="#e879b0" font-weight="700">✗</tspan> Fail:</text>
+    <text x="620" y="118">fix the code,</text>
+    <text x="620" y="134">rebuild, reinstall</text>
+  </g>
+
+  <!-- arrows between steps -->
+  <g stroke="#8b949e" stroke-width="1.6">
+    <path d="M186,84 H198"/>
+    <path d="M378,84 H390"/>
+    <path d="M570,84 H582"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M205,84 l-7,-4 v8 z"/>
+    <path d="M397,84 l-7,-4 v8 z"/>
+    <path d="M589,84 l-7,-4 v8 z"/>
+  </g>
+
+  <!-- retry -->
+  <path d="M672,148 C672,206 100,206 100,156" stroke="#e879b0" stroke-width="1.6" fill="none" stroke-dasharray="5 4"/>
+  <path d="M100,149 l-5,9 h10 z" fill="#e879b0"/>
+  <text x="386" y="214" font-size="11" fill="#e879b0" text-anchor="middle">The AI loops on its own</text>
+</svg>

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 340" role="img" aria-label="Five ways to check a phone screen and their limits. 1. Desktop mobile view: fakes screen size, but a different engine, no keyboard or notch, and no app code. 2. Simulators and emulators: the real engine and the real app, but the keyboard may differ from a device. 3. Screenshots: the real screen, but too slow (shoot, read, repeat), taps miss because coordinates are guessed, and real sizes can't be measured. 4. Inspector UI (chrome://inspect, Safari): attaches to a real device, but a person has to click, so AI can't drive it by command. 5. Real device plus command line: the AI drives and measures on the real device. The iPhone needs a homemade script, and the iPhone keyboard is checked by hand." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- columns -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="11" y="14" width="142" height="312" rx="12"/>
+    <rect x="162" y="14" width="142" height="312" rx="12"/>
+    <rect x="313" y="14" width="142" height="312" rx="12"/>
+    <rect x="464" y="14" width="142" height="312" rx="12"/>
+    <rect x="615" y="14" width="142" height="312" rx="12" stroke="#56d3a3" stroke-width="1.6"/>
+  </g>
+
+  <!-- labels -->
+  <g font-size="11" font-weight="700" text-anchor="middle" fill="#8b949e">
+    <text x="82" y="36">Option 1</text>
+    <text x="233" y="36">Option 2</text>
+    <text x="384" y="36">Option 3</text>
+    <text x="535" y="36">Option 4</text>
+    <text x="686" y="36" fill="#56d3a3">What I chose</text>
+  </g>
+
+  <!-- titles -->
+  <g font-size="13" font-weight="700" fill="#c9d1d9" text-anchor="middle">
+    <text x="82" y="58">Mobile view</text>
+    <text x="233" y="58">Simulators</text>
+    <text x="384" y="58">Screenshots</text>
+    <text x="535" y="58">Inspector UI</text>
+    <text x="686" y="58" fill="#56d3a3">Device + CLI</text>
+  </g>
+  <g font-size="10" fill="#8b949e" text-anchor="middle">
+    <text x="82" y="76">Desktop Chrome</text>
+    <text x="233" y="76">Xcode · Android Studio</text>
+    <text x="384" y="76">What I tried</text>
+    <text x="535" y="76">chrome://inspect · Safari</text>
+    <text x="686" y="76">adb · WebKit proxy</text>
+  </g>
+
+  <!-- dividers -->
+  <g stroke="#444c56">
+    <path d="M23,90 H141"/>
+    <path d="M174,90 H292"/>
+    <path d="M325,90 H443"/>
+    <path d="M476,90 H594"/>
+    <path d="M627,90 H745"/>
+  </g>
+
+  <!-- what works -->
+  <g font-size="11.5" fill="#c9d1d9">
+    <text x="23" y="114"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="38" y="114">Fakes screen size</text>
+
+    <text x="174" y="114"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="189" y="114">Real engine,</text>
+    <text x="189" y="130">the real app</text>
+
+    <text x="325" y="114"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="340" y="114">Real screen,</text>
+    <text x="340" y="130">as is</text>
+
+    <text x="476" y="114"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="491" y="114">Real device</text>
+
+    <text x="627" y="114"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="642" y="114">Real device</text>
+    <text x="627" y="138"><tspan fill="#56d3a3" font-weight="700">✓</tspan></text>
+    <text x="642" y="138">AI drives</text>
+    <text x="642" y="154">and measures</text>
+  </g>
+
+  <!-- limit labels -->
+  <g font-size="10" fill="#8b949e">
+    <text x="23" y="190">Limits</text>
+    <text x="174" y="190">Limits</text>
+    <text x="325" y="190">Limits</text>
+    <text x="476" y="190">Limits</text>
+    <text x="627" y="190">Left over</text>
+  </g>
+
+  <!-- limits -->
+  <g font-size="11.5" fill="#c9d1d9">
+    <!-- 1 -->
+    <text x="23" y="212" fill="#e879b0" font-weight="700">✗</text>
+    <text x="38" y="212">Different engine</text>
+    <text x="38" y="227" font-size="10" fill="#8b949e">iPhone is WebKit</text>
+    <text x="23" y="250" fill="#e879b0" font-weight="700">✗</text>
+    <text x="38" y="250">No keyboard/notch</text>
+    <text x="23" y="272" fill="#e879b0" font-weight="700">✗</text>
+    <text x="38" y="272">No app code</text>
+
+    <!-- 2 -->
+    <text x="174" y="212" fill="#e879b0" font-weight="700">✗</text>
+    <text x="189" y="212">Keyboard may</text>
+    <text x="189" y="228">differ from device</text>
+
+    <!-- 3 -->
+    <text x="325" y="212" fill="#e879b0" font-weight="700">✗</text>
+    <text x="340" y="212">Too slow</text>
+    <text x="340" y="227" font-size="10" fill="#8b949e">shoot, read, repeat</text>
+    <text x="325" y="250" fill="#e879b0" font-weight="700">✗</text>
+    <text x="340" y="250">Guessed coords,</text>
+    <text x="340" y="266">taps miss</text>
+    <text x="325" y="290" fill="#e879b0" font-weight="700">✗</text>
+    <text x="340" y="290">Can't measure</text>
+    <text x="340" y="306">real sizes</text>
+
+    <!-- 4 -->
+    <text x="476" y="212" fill="#e879b0" font-weight="700">✗</text>
+    <text x="491" y="212">A person clicks</text>
+    <text x="476" y="234" fill="#e879b0" font-weight="700">✗</text>
+    <text x="491" y="234">AI can't drive</text>
+    <text x="491" y="250">it by command</text>
+
+    <!-- 5 -->
+    <text x="627" y="212" fill="#d29922" font-weight="700">△</text>
+    <text x="642" y="212">iPhone needs a</text>
+    <text x="642" y="228">homemade script</text>
+    <text x="627" y="252" fill="#d29922" font-weight="700">△</text>
+    <text x="642" y="252">iPhone keyboard</text>
+    <text x="642" y="268">checked by hand</text>
+  </g>
+</svg>
