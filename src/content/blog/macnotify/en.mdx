@@ -34,7 +34,7 @@ Logitech offers the [Logi Actions SDK](https://logitech.github.io/actions-sdk-do
 
 There are 15 patterns, with names like `happy_alert`, `knock`, `jingle` and `firework`. Register one event per pattern, and you can switch patterns just by choosing which event to raise.
 
-### Claude Code finishing: just catch the notification
+### Just catch the notification
 
 Claude Code can show a Mac notification when it finishes a task. So there's no need to watch Claude Code itself. Catching the notification is enough.
 
@@ -67,7 +67,7 @@ log stream --style compact --predicate 'subsystem == "com.apple.unc" AND eventMe
 
 When `log stream` starts, its first line echoes the filter back, and that line contains `Presenting <NotificationRecord` too. So it has to be skipped. Otherwise the mouse buzzes once the moment the plugin starts, with no notification at all.
 
-It catches the banner within about 100 ms and needs no special permission. The line includes the sending app's bundle id (`com.tinyspeck.slackmacgap`), which is exactly what's needed to pick a per-app pattern. The plugin never reads the notification's content. It only uses the fact that a banner appeared and which app sent it.
+It catches the banner within about 100 ms, and detecting it this way needs no special permission. The line includes the sending app's bundle id (`com.tinyspeck.slackmacgap`), which is exactly what's needed to pick a per-app pattern. The plugin never reads the notification's content. It only uses the fact that a banner appeared and which app sent it.
 
 I also liked that this approach handles Do Not Disturb for free. `Presenting` is logged only when a banner is actually shown. Notifications silenced by a Focus mode or Do Not Disturb don't leave that line, so the mouse stays still without any extra code.
 
@@ -86,6 +86,17 @@ When an app posts a notification, `usernoted` shows the banner and writes a log 
 I only asked for the implementation once the research was done. Instead of directing it piece by piece in chat, I wrote everything up in a single requirements spec (a Markdown file) and handed that over.
 
 Everything I'd found went into it: vibrate through SDK events, catch notifications from the `usernoted` log, fall back to the database if that fails, keep a pattern per app. What to build and how was settled, and only the implementation was left to the AI.
+
+The plugin that came out of it is used through four actions you can bind to mouse buttons in Options+:
+
+| Action | What it does |
+|---|---|
+| Haptic Pattern | Pick the default vibration pattern, with a live preview as you choose |
+| Per-App Haptic Pattern | Give an app its own pattern, or mute it |
+| Notification Haptics On/Off | Turn all notification haptics on or off. Handy on a button for meetings |
+| Test Haptic | Play the current pattern once |
+
+The per-app list shows apps that have sent notifications before. That list comes from the Notification Center database, so you only see past apps if Full Disk Access is granted. Without it, apps are added one by one as they send notifications after the plugin starts.
 
 ## You have to hold the mouse to know
 
