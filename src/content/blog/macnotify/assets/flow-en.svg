@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 236" role="img" aria-label="How MacNotify works: when an app such as Claude Code, Slack or KakaoTalk posts a notification, the macOS notification daemon usernoted shows a banner and writes a Presenting log line. MacNotify watches for that line with log stream, picks a vibration pattern from the bundle id in it, and raises an event. Logi Plugin Service turns the event into a haptic waveform and the Haptic Sense Panel on the MX Master 4 vibrates. If the log cannot be read, it falls back to checking the Notification Center database every second, which lags about 5 seconds and needs Full Disk Access. In Do Not Disturb no banner is shown, so there is no log line and no vibration." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- the log line usernoted writes when a banner is shown -->
+  <rect x="196" y="6" width="372" height="24" rx="6" fill="#1d3a31" stroke="#56d3a3"/>
+  <text x="382" y="22" font-size="10" fill="#c9d1d9" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">Presenting &lt;NotificationRecord app:"com.tinyspeck.slackmacgap"</text>
+  <path d="M230,44 V30" stroke="#56d3a3" stroke-width="1.6" fill="none"/>
+  <path d="M382,30 V38" stroke="#56d3a3" stroke-width="1.6" fill="none"/>
+  <path d="M382,44 l-4,-7 h8 z" fill="#56d3a3"/>
+
+  <!-- the main path -->
+  <g fill="#2b3139" stroke="#444c56">
+    <rect x="14" y="44" width="128" height="76" rx="10"/>
+    <rect x="166" y="44" width="128" height="76" rx="10"/>
+    <rect x="470" y="44" width="128" height="76" rx="10"/>
+    <rect x="622" y="44" width="128" height="76" rx="10"/>
+  </g>
+  <rect x="318" y="44" width="128" height="76" rx="10" fill="#2b3139" stroke="#56d3a3"/>
+
+  <g font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">
+    <text x="78" y="72">Apps</text>
+    <text x="230" y="72">usernoted</text>
+    <text x="382" y="72" fill="#56d3a3">MacNotify</text>
+    <text x="534" y="72" font-size="12">Logi Plugin Service</text>
+    <text x="686" y="72">MX Master 4</text>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#8b949e">
+    <text x="78" y="92">Claude Code · Slack</text>
+    <text x="78" y="108">KakaoTalk · Calendar</text>
+    <text x="230" y="92">notification daemon</text>
+    <text x="230" y="108">shows banner, logs it</text>
+    <text x="382" y="92">watches log stream</text>
+    <text x="382" y="108">picks pattern per app</text>
+    <text x="534" y="92">turns notif_knock event</text>
+    <text x="534" y="108">into knock waveform</text>
+    <text x="686" y="92">Haptic Sense Panel</text>
+    <text x="686" y="108">vibrates</text>
+  </g>
+
+  <g stroke="#8b949e" stroke-width="1.6" fill="none">
+    <path d="M142,82 H160"/>
+    <path d="M446,82 H464"/>
+    <path d="M598,82 H616"/>
+  </g>
+  <g fill="#8b949e">
+    <path d="M166,82 l-7,-4 v8 z"/>
+    <path d="M470,82 l-7,-4 v8 z"/>
+    <path d="M622,82 l-7,-4 v8 z"/>
+  </g>
+
+  <!-- fallback: Notification Center database -->
+  <path d="M230,120 V158" stroke="#8b949e" stroke-width="1.4" fill="none" stroke-dasharray="4 3"/>
+  <path d="M230,164 l-4,-7 h8 z" fill="#8b949e"/>
+  <text x="238" y="145" font-size="10" fill="#8b949e">written late</text>
+  <rect x="166" y="164" width="128" height="60" rx="10" fill="none" stroke="#444c56" stroke-dasharray="4 3"/>
+  <text x="230" y="188" font-size="12" font-weight="700" fill="#c9d1d9" text-anchor="middle">Notification DB</text>
+  <text x="230" y="206" font-size="10" fill="#8b949e" text-anchor="middle">if log fails · ~5 s late</text>
+  <text x="230" y="219" font-size="10" fill="#8b949e" text-anchor="middle">needs Full Disk Access</text>
+  <path d="M294,194 H382 V126" stroke="#8b949e" stroke-width="1.4" fill="none" stroke-dasharray="4 3"/>
+  <path d="M382,120 l-4,7 h8 z" fill="#8b949e"/>
+  <text x="302" y="186" font-size="10" fill="#8b949e">checks every 1 s</text>
+
+  <!-- focus mode note -->
+  <rect x="470" y="162" width="280" height="64" rx="10" fill="none" stroke="#444c56"/>
+  <text x="484" y="184" font-size="12" font-weight="700" fill="#c9d1d9">In Do Not Disturb</text>
+  <text x="484" y="202" font-size="11" fill="#8b949e">no banner means no Presenting line,</text>
+  <text x="484" y="217" font-size="11" fill="#8b949e">so it stays quiet with no extra code</text>
+</svg>
