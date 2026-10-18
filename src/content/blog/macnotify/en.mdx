@@ -16,7 +16,7 @@ The MX Master 4 I was using happens to have haptics, so I thought: if the mouse 
 
 That's how [MacNotify](https://marketplace.logi.com/plugin/MacNotify/en) came about. When a notification banner shows up on the Mac, the mouse vibrates, and you can give each app its own vibration pattern. It's on the Logitech Marketplace, and the code is on [GitHub](https://github.com/GUMBOKIM/Logitech-plugin-MacNotify).
 
-I vibe-coded the whole plugin without writing the code myself. Rather than opening with "build me this," though, I first checked that it could be done and then handed over a spec. So this post is less about my conversations with the AI and more about what I looked into and decided myself before handing the code over.
+I vibe-coded the whole plugin without writing the code myself. Rather than opening with "build me this," though, I first checked that it could be done and then handed over a spec. So this post is less about my conversations with the AI and more about deciding what to look into, and judging what came back, before handing the code over.
 
 ## Before asking for code, I checked it could be done
 
@@ -114,6 +114,10 @@ Honestly, the review process was a bit frustrating. Each round trip with Logitec
 
 ## A developer trying vibe coding
 
-The AI wrote all the code, but finding a way that works, trying the options myself, picking one, and checking the result with the mouse in my hand were still on me. That's why most of this post is about those parts. That's where my time went instead of into writing code.
+Before AI, I would have done all of this by hand: digging through the SDK docs, figuring out where macOS leaves traces of a notification, running examples, and writing the code. That's where most of the time would have gone.
+
+This time the AI did most of that slow work. Finding and summarizing material and writing the code were its job. My time went somewhere else: deciding which questions needed answering, judging which of the results to go with, and checking that it really worked. Choosing the log over the database, deciding five seconds was too late, not wanting to ask for Full Disk Access just to make a mouse buzz: those were my calls.
+
+For a developer, vibe coding doesn't so much reduce the work as move where the time goes. The hands-on work shifts to the AI, and you spend more of your time deciding what to look into and judging what's right.
 
 If you use an MX Master 4, you can get it from the [Marketplace](https://marketplace.logi.com/plugin/MacNotify/en). Bug reports and feature requests are welcome on [GitHub Issues](https://github.com/GUMBOKIM/Logitech-plugin-MacNotify/issues).
