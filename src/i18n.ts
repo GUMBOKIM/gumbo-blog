@@ -75,7 +75,9 @@ export function postSlug(post: CollectionEntry<'blog'>) {
 
 /** 예약 발행: 날짜가 아직 안 된 글은 빌드에서 빠진다. dev에서는 미리 보이게 둔다 */
 function isPublished(date: Date) {
-	return !import.meta.env.PROD || date <= new Date();
+	// frontmatter dates parse as UTC midnight, so compare against today's date in KST (UTC+9)
+	// rather than now; otherwise a post only counts as due from 09:00 KST
+	return !import.meta.env.PROD || date.getTime() <= Date.now() + 9 * 60 * 60 * 1000;
 }
 
 export async function getPosts(locale: Locale, category?: Category) {
