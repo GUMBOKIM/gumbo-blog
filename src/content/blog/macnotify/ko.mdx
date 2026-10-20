@@ -9,7 +9,7 @@ import flow from './assets/flow.svg?url';
 
 요즘은 Claude Code한테 일을 맡겨 두고 다른 창에서 딴 일을 자주 합니다. 문제는 작업이 언제 끝났는지 모른다는 겁니다. 끝났나 싶어서 터미널을 열어 보면 아직 돌고 있고, 한참 잊고 있다가 열어 보면 진작 끝나 있습니다.
 
-마침 쓰고 있던 MX Master 4에 진동 기능이 있어서, 작업이 끝날 때 마우스가 톡 떨려 주면 화면을 안 봐도 알 수 있겠다 싶었습니다.
+마침 쓰고 있던 MX Master 4에 진동 기능이 있어서, 작업이 끝날 때 마우스가 짧게 진동해 주면 화면을 안 봐도 알 수 있겠다 싶었습니다.
 
 ![로지텍 MX Master 4. 엄지가 닿는 왼쪽에 물결무늬의 햅틱 센스 패널이 있다](./assets/mx-master-4.png)
 <p class="caption">로지텍 MX Master 4. 엄지가 닿는 물결무늬 부분이 진동하는 햅틱 센스 패널입니다.<br />출처: <a href="https://www.logitech.com/ko-kr/products/mice/mx-master-4.html">Logitech</a></p>
@@ -65,7 +65,7 @@ Presenting <NotificationRecord app:"com.tinyspeck.slackmacgap" ...
 log stream --style compact --predicate 'subsystem == "com.apple.unc" AND eventMessage CONTAINS "Presenting <NotificationRecord"'
 ```
 
-`log stream`은 시작할 때 첫 줄에 필터 조건을 그대로 찍어 주는데, 그 안에도 `Presenting <NotificationRecord`가 들어 있습니다. 그래서 이 첫 줄은 따로 걸러야 합니다. 안 그러면 플러그인을 켜자마자 알림도 없는데 마우스가 한 번 떨립니다.
+`log stream`은 시작할 때 첫 줄에 필터 조건을 그대로 찍어 주는데, 그 안에도 `Presenting <NotificationRecord`가 들어 있습니다. 그래서 이 첫 줄은 따로 걸러야 합니다. 안 그러면 플러그인을 켜자마자 알림도 없는데 마우스가 한 번 진동합니다.
 
 배너가 뜨고 100ms 정도면 잡히고, 이렇게 감지하는 데는 권한도 따로 필요 없습니다. 줄 안에 보낸 앱의 bundle id(`com.tinyspeck.slackmacgap`)가 들어 있어서 앱마다 패턴을 고르는 데 그대로 쓸 수 있습니다. 알림 내용은 보지 않습니다. 배너가 떴다는 것과 어느 앱인지만 씁니다.
 
