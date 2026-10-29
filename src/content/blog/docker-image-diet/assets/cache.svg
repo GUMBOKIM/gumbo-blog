@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 230" role="img" aria-label="GitHub 호스팅 러너의 빌드 캐시 비교. 이전(캐시 없음): 빌드 1이 새 VM에서 돌고, 끝나면 VM이 삭제되며 레이어 캐시도 사라져서 빌드 2는 처음부터 다시 한다. 이후(type=gha 캐시): 빌드 1이 cache-to로 GitHub Actions 캐시(기본 레포당 10GB)에 레이어를 저장하고, 빌드 2는 cache-from으로 그 레이어를 받아 바뀐 것만 다시 만든다." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- Before -->
+  <text x="14" y="24" font-size="13" font-weight="700" fill="#f85149">이전 · 캐시 없음</text>
+
+  <rect x="14" y="40" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="114" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">빌드 1</text>
+  <text x="114" y="82" font-size="11" text-anchor="middle" fill="#8b949e">새 VM · 처음부터</text>
+
+  <path d="M214,68 H276" stroke="#8b949e" stroke-width="1.6"/>
+  <path d="M283,68 l-7,-4 v8 z" fill="#8b949e"/>
+
+  <rect x="284" y="40" width="200" height="56" rx="8" fill="#3d1f1f" stroke="#f85149"/>
+  <text x="384" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">VM 삭제</text>
+  <text x="384" y="82" font-size="11" text-anchor="middle" fill="#f85149">레이어 캐시도 함께 사라짐</text>
+
+  <path d="M484,68 H546" stroke="#8b949e" stroke-width="1.6"/>
+  <path d="M553,68 l-7,-4 v8 z" fill="#8b949e"/>
+
+  <rect x="554" y="40" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="654" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">빌드 2</text>
+  <text x="654" y="82" font-size="11" text-anchor="middle" fill="#f85149">또 처음부터</text>
+
+  <!-- After -->
+  <text x="14" y="138" font-size="13" font-weight="700" fill="#56d3a3">이후 · type=gha 캐시</text>
+
+  <rect x="14" y="154" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="114" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">빌드 1</text>
+  <text x="114" y="196" font-size="11" text-anchor="middle" fill="#8b949e">새 VM</text>
+
+  <path d="M214,182 H276" stroke="#56d3a3" stroke-width="1.6"/>
+  <path d="M283,182 l-7,-4 v8 z" fill="#56d3a3"/>
+  <text x="248" y="172" font-size="10" text-anchor="middle" fill="#56d3a3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cache-to</text>
+
+  <rect x="284" y="154" width="200" height="56" rx="8" fill="#1f3d2e" stroke="#56d3a3"/>
+  <text x="384" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">GitHub Actions 캐시</text>
+  <text x="384" y="196" font-size="11" text-anchor="middle" fill="#8b949e">기본 레포당 10GB · VM 밖에 남음</text>
+
+  <path d="M484,182 H546" stroke="#56d3a3" stroke-width="1.6"/>
+  <path d="M553,182 l-7,-4 v8 z" fill="#56d3a3"/>
+  <text x="518" y="172" font-size="10" text-anchor="middle" fill="#56d3a3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cache-from</text>
+
+  <rect x="554" y="154" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="654" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">빌드 2</text>
+  <text x="654" y="196" font-size="11" text-anchor="middle" fill="#56d3a3">바뀐 것만 다시</text>
+</svg>

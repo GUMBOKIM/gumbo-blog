@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 230" role="img" aria-label="Build cache on GitHub-hosted runners, before and after. Before, with no cache: build 1 runs on a fresh VM, the VM is deleted when it finishes and the layer cache goes with it, so build 2 starts from scratch. After, with type=gha cache: build 1 saves its layers to the GitHub Actions cache (10GB per repo by default) via cache-to, and build 2 restores them via cache-from and rebuilds only what changed." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- Before -->
+  <text x="14" y="24" font-size="13" font-weight="700" fill="#f85149">Before · no cache</text>
+
+  <rect x="14" y="40" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="114" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">Build 1</text>
+  <text x="114" y="82" font-size="11" text-anchor="middle" fill="#8b949e">Fresh VM · from scratch</text>
+
+  <path d="M214,68 H276" stroke="#8b949e" stroke-width="1.6"/>
+  <path d="M283,68 l-7,-4 v8 z" fill="#8b949e"/>
+
+  <rect x="284" y="40" width="200" height="56" rx="8" fill="#3d1f1f" stroke="#f85149"/>
+  <text x="384" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">VM deleted</text>
+  <text x="384" y="82" font-size="11" text-anchor="middle" fill="#f85149">Layer cache goes with it</text>
+
+  <path d="M484,68 H546" stroke="#8b949e" stroke-width="1.6"/>
+  <path d="M553,68 l-7,-4 v8 z" fill="#8b949e"/>
+
+  <rect x="554" y="40" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="654" y="63" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">Build 2</text>
+  <text x="654" y="82" font-size="11" text-anchor="middle" fill="#f85149">From scratch again</text>
+
+  <!-- After -->
+  <text x="14" y="138" font-size="13" font-weight="700" fill="#56d3a3">After · type=gha cache</text>
+
+  <rect x="14" y="154" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="114" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">Build 1</text>
+  <text x="114" y="196" font-size="11" text-anchor="middle" fill="#8b949e">Fresh VM</text>
+
+  <path d="M214,182 H276" stroke="#56d3a3" stroke-width="1.6"/>
+  <path d="M283,182 l-7,-4 v8 z" fill="#56d3a3"/>
+  <text x="248" y="172" font-size="10" text-anchor="middle" fill="#56d3a3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cache-to</text>
+
+  <rect x="284" y="154" width="200" height="56" rx="8" fill="#1f3d2e" stroke="#56d3a3"/>
+  <text x="384" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">GitHub Actions cache</text>
+  <text x="384" y="196" font-size="11" text-anchor="middle" fill="#8b949e">10GB per repo by default · survives the VM</text>
+
+  <path d="M484,182 H546" stroke="#56d3a3" stroke-width="1.6"/>
+  <path d="M553,182 l-7,-4 v8 z" fill="#56d3a3"/>
+  <text x="518" y="172" font-size="10" text-anchor="middle" fill="#56d3a3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cache-from</text>
+
+  <rect x="554" y="154" width="200" height="56" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="654" y="177" font-size="13" font-weight="700" text-anchor="middle" fill="#c9d1d9">Build 2</text>
+  <text x="654" y="196" font-size="11" text-anchor="middle" fill="#56d3a3">Only what changed</text>
+</svg>

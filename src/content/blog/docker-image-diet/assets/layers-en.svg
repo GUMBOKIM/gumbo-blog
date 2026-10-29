@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 250" role="img" aria-label="Layer order, before and after. Before: dist sits on the base image and node_modules on top of dist. dist changes every build, so node_modules above it is rebuilt too. After: node_modules sits on the base image and dist on top. With unchanged dependencies node_modules is reused and only dist is rebuilt." font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+  <!-- Before -->
+  <text x="14" y="24" font-size="13" font-weight="700" fill="#f85149">Before</text>
+  <text x="340" y="24" font-size="12" text-anchor="end" fill="#8b949e">A code change rebuilds node_modules too</text>
+
+  <rect x="14" y="40" width="326" height="52" rx="8" fill="#3d1f1f" stroke="#f85149"/>
+  <text x="30" y="62" font-size="13" font-weight="700" fill="#c9d1d9">③ node_modules</text>
+  <text x="30" y="80" font-size="11" fill="#8b949e">Biggest layer · rebuilt though unchanged</text>
+  <text x="324" y="71" font-size="12" text-anchor="end" fill="#f85149">rebuilt</text>
+
+  <rect x="14" y="100" width="326" height="52" rx="8" fill="#3d1f1f" stroke="#f85149"/>
+  <text x="30" y="122" font-size="13" font-weight="700" fill="#c9d1d9">② dist</text>
+  <text x="30" y="140" font-size="11" fill="#8b949e">Small, but changes every build</text>
+  <text x="324" y="131" font-size="12" text-anchor="end" fill="#f85149">rebuilt</text>
+
+  <rect x="14" y="160" width="326" height="52" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="30" y="182" font-size="13" font-weight="700" fill="#c9d1d9">① base image</text>
+  <text x="30" y="200" font-size="11" fill="#8b949e">FROM · several layers</text>
+  <text x="324" y="191" font-size="12" text-anchor="end" fill="#56d3a3">reused</text>
+
+  <!-- divider -->
+  <path d="M384,14 V236" stroke="#444c56" stroke-dasharray="4 4"/>
+
+  <!-- After -->
+  <text x="428" y="24" font-size="13" font-weight="700" fill="#56d3a3">After</text>
+  <text x="754" y="24" font-size="12" text-anchor="end" fill="#8b949e">Same dependencies: only dist is rebuilt</text>
+
+  <rect x="428" y="40" width="326" height="52" rx="8" fill="#3d1f1f" stroke="#f85149"/>
+  <text x="444" y="62" font-size="13" font-weight="700" fill="#c9d1d9">③ dist</text>
+  <text x="444" y="80" font-size="11" fill="#8b949e">Small, but changes every build</text>
+  <text x="738" y="71" font-size="12" text-anchor="end" fill="#f85149">rebuilt</text>
+
+  <rect x="428" y="100" width="326" height="52" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="444" y="122" font-size="13" font-weight="700" fill="#c9d1d9">② node_modules</text>
+  <text x="444" y="140" font-size="11" fill="#8b949e">Biggest layer · kept as is</text>
+  <text x="738" y="131" font-size="12" text-anchor="end" fill="#56d3a3">reused</text>
+
+  <rect x="428" y="160" width="326" height="52" rx="8" fill="#30363d" stroke="#444c56"/>
+  <text x="444" y="182" font-size="13" font-weight="700" fill="#c9d1d9">① base image</text>
+  <text x="444" y="200" font-size="11" fill="#8b949e">FROM · several layers</text>
+  <text x="738" y="191" font-size="12" text-anchor="end" fill="#56d3a3">reused</text>
+
+  <text x="384" y="238" font-size="12" text-anchor="middle" fill="#8b949e">Stacked bottom to top · when a layer changes, everything above it is rebuilt</text>
+</svg>

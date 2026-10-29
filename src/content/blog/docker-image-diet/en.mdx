@@ -1,0 +1,192 @@
+---
+title: "Halving Docker Images and Cutting Rebuilds to a Fifth: Dependency Cleanup and Build Cache"
+description: Dropping build tools from the runtime image and adding a layer cache to GitHub Actions took six images from 1.8GB to 860MB and their combined rebuild time from 767s to 160s
+category: dev
+date: 2026-10-29
+---
+
+import layers from './assets/layers-en.svg?url';
+import cache from './assets/cache-en.svg?url';
+
+At work we build six apps in a bun monorepo: an API server, two background workers and three frontends. GitHub Actions builds the Docker images and pushes them to AWS ECR, and EKS pulls them to run.
+
+At some point people started saying deploys were slow. Each image was 250 to 370MB compressed, and changing a single line of code meant a two to three minute build per app. Two fixes halved the images and cut rebuild time to a fifth.
+
+| | Before | After | |
+|---|---|---|---|
+| Image size (6 apps, compressed) | 1,755MB | 860MB | -51% |
+| Rebuild time (6 apps) | 767s | 160s | -79% |
+| New bytes pushed per build | 536MB | 31.6MB | -94% |
+
+Rebuild time is measured by changing code only, with dependencies unchanged.
+
+## What a heavy image costs
+
+Rather than "smaller is better" in the abstract, I started by listing where the cost actually lands.
+
+1. **Builds take longer.** The more files there are to install, copy, compress and upload, the longer the build and the push.
+2. **Registry storage grows.** Every build adds an image to ECR, and you pay for what is stored.
+3. **New pods start late.** On a deploy or scale-out the node has to pull the image before it can start the container.
+4. **Node disks fill up.** Pulled images stay on the node disk. When it fills, image garbage collection kicks in, and if it keeps filling, pods can be evicted.
+
+Shrinking the image helps with 2, 3 and 4. A build cache helps with 1 and 2.
+
+## First: an image is a stack of layers
+
+Both fixes work at the layer level, so a quick recap.
+
+```dockerfile
+# ① pulls in the base image's layers
+FROM oven/bun:slim
+# ② the biggest layer
+COPY node_modules ./node_modules
+# ③ small, but changes every build
+COPY dist ./dist
+# config only, no layer
+CMD ["bun", "dist/main.js"]
+```
+
+`FROM` brings in the base image's layers, and each `COPY` or `RUN` adds the changed files as one layer. Layers pay off in two places.
+
+- **At build time they are the cache.** If a step's command and input files match the previous build, the step is reused instead of re-run.
+- **At push and pull time they are skipped.** A layer the other side already has is not sent again.
+
+Pull or build an image and open it with [dive](https://github.com/wagoodman/dive) to see which files sit in each layer and how big they are. This whole effort started with `dive <image>` on the node_modules layer.
+
+## 1. The runtime image was carrying build tools
+
+The node_modules layer in dive was full of packages that are only needed at build time: typescript, biome, the NestJS CLI. There were two reasons.
+
+- **We copied the build node_modules wholesale.** The builder stage ran `bun install` for everything, built the app, and the runtime stage then did a plain `COPY` of that node_modules. We had a multi-stage build, and the dev dependencies came along anyway.
+- **Build-only packages were listed under `dependencies`.** Capacitor and the Prisma CLI are used only at build time, but they were declared as `dependencies` rather than `devDependencies`, so a production-only install still pulled them in.
+
+### Installing runtime dependencies separately
+
+A stage holding only the root and workspace package.json files plus bun.lock installs the runtime dependencies on their own, and only that node_modules goes into the runtime image.
+
+```dockerfile
+# Excerpt. manifests is an earlier stage with only the package.json files and bun.lock
+# under WORKDIR /workspace; builder installs everything and produces /workspace/apps/api/dist.
+FROM manifests AS runtime-deps
+RUN bun install --linker hoisted \
+    --filter './apps/api' \
+    --production --omit=peer \
+    --ignore-scripts
+
+FROM oven/bun:1.4.4-slim
+WORKDIR /workspace
+COPY --from=runtime-deps /workspace/node_modules ./node_modules
+COPY --from=builder /workspace/apps/api/dist ./dist
+CMD ["bun", "dist/main.js"]
+```
+
+| Flag | What it does |
+|---|---|
+| `--filter <app>` | Install only what this app in the monorepo uses |
+| `--production` | Skip devDependencies |
+| `--omit=peer` | Skip automatic peer installs (such as the Prisma CLI that `@prisma/client` pulls in as a peer) |
+| `--ignore-scripts` | Skip install scripts |
+| `--linker hoisted` | Keep the hoisted layout we already had, so paths do not move |
+
+Two of these flags deserve care. With `--ignore-scripts` on, check that packages relying on a postinstall step, such as Prisma client generation, still work. Copying only the root node_modules is also only safe because the app is bundled with `bun build`; an unbundled app may need `apps/<app>/node_modules` as well.
+
+On top of that I moved Capacitor and the Prisma CLI to `devDependencies`. The backend images were already on a `slim` base, but the three frontends were still on the default `oven/bun` image. Switching them to `oven/bun:slim` alone saved about 21MB per app.
+
+### Result: images halved
+
+| App | Before | After | |
+|---|---|---|---|
+| API server | 264MB | 143MB | -46% |
+| Worker 1 | 253MB | 127MB | -50% |
+| Worker 2 | 258MB | 143MB | -45% |
+| Frontend 1 | 367MB | 178MB | -51% |
+| Frontend 2 | 331MB | 133MB | -60% |
+| Frontend 3 | 282MB | 136MB | -52% |
+| **Total** | **1,755MB** | **860MB** | **-51%** |
+
+Compressed sizes, which is what lands in ECR.
+
+## 2. The build cache did not survive to the next build
+
+Even after shrinking the images, builds were still slow. The cause was how GitHub-hosted runners work.
+
+<img class="diagram" src={cache} alt="Build cache on GitHub-hosted runners, before and after. Before, with no cache: build 1 runs on a fresh VM, the VM is deleted when it finishes and the layer cache goes with it, so build 2 starts from scratch. After, with type=gha cache: build 1 saves its layers to the GitHub Actions cache (10GB per repo by default) via cache-to, and build 2 restores them via cache-from and rebuilds only what changed." width="768" height="230" />
+
+- **Every build gets a fresh VM that is deleted afterwards.** Docker's layer cache inside the VM disappears with it.
+- **So every build starts from `bun install`.** Even with identical dependencies there is no cache to reuse.
+- **The same dependencies are pushed again every time.** Even with identical contents, a fresh install produces a layer with a different digest, and ECR takes it as a new layer. For the API server alone that was 98.5MB of new bytes per build.
+
+You do not hit this when building on a persistent server like Jenkins, where Docker keeps its cache between runs. Conversely, a self-hosted runner configured to give each job a clean environment has exactly the same problem.
+
+### Keeping layers in the GitHub Actions cache
+
+buildx can export its cache outside the VM, into the GitHub Actions cache. Two lines in the workflow, `cache-from` and `cache-to`, do it. If you were not on buildx yet, you also need `setup-buildx-action`.
+
+```yaml
+- uses: docker/setup-buildx-action@v3
+- uses: docker/build-push-action@v6
+  with:
+    push: true
+    tags: ${{ env.IMAGE }}
+    cache-from: type=gha,scope=api
+    cache-to: type=gha,scope=api,mode=max
+```
+
+Each app gets its own `scope` so they do not overwrite each other's cache. `mode=max` exports the intermediate stages too, such as builder, not just the final image's layers. Without it the `bun install` step would still run every time. The GitHub Actions cache has a default limit of 10GB per repository, drops entries unused for seven days and evicts least recently used entries when full, which still left room for six apps' worth of intermediate layers.
+
+### Layer order is everything
+
+Even with a cache, the wrong order in the Dockerfile loses most of the benefit. When one layer changes, every layer after it is rebuilt.
+
+<img class="diagram" src={layers} alt="Layer order, before and after. Before: dist sits on the base image and node_modules on top of dist. dist changes every build, so node_modules above it is rebuilt too. After: node_modules sits on the base image and dist on top. With unchanged dependencies node_modules is reused and only dist is rebuilt." width="768" height="250" />
+
+Our Dockerfile copied `dist` first and `node_modules` after it. A one-line code change altered `dist`, which invalidated the cache for the `node_modules` copy step after it, so that layer was rebuilt and pushed again every time. Swapping the order, `node_modules` first and `dist` after, means that as long as dependencies are unchanged the `node_modules` layer comes straight from the cache and is never pushed to ECR again.
+
+> Copy what rarely changes first, and what changes often last.
+
+The same rule is why `bun install` runs after copying only the package.json files and bun.lock, not the whole source. A code change with an unchanged lockfile leaves the install step cached. That is what the separate manifests stage is for.
+
+### Result: only what changed gets rebuilt
+
+| App | Build time | New bytes pushed |
+|---|---|---|
+| API server | 119s → 47s | 98.5MB → 4.3MB |
+| Worker 1 | 109s → 8s | 53.2MB → 8.1MB |
+| Worker 2 | 105s → 6s | 69.3MB → 8.0MB |
+| Frontend 1 | 205s → 85s | 136MB → 9.7MB |
+| Frontend 2 | 111s → 7s | 88MB → 0.6MB |
+| Frontend 3 | 118s → 7s | 91MB → 0.9MB |
+| **Total** | **767s → 160s (-79%)** | **536MB → 31.6MB (-94%)** |
+
+Measured by changing code only, with dependencies unchanged. A build that changes dependencies rebuilds from the node_modules layer up and is nowhere near this fast. I did not measure that case.
+
+The API server and Frontend 1 still take longer than the rest because their code build itself is heavy. The cache only skips steps that did not change. Compiling the code that did change takes as long as it ever did.
+
+Looking at the API server alone: the image went from 264MB to 143MB, a rebuild from 119s to 47s, and the bytes pushed per build from 98.5MB to 4.3MB. 97% of the image is layers ECR already has.
+
+## Four things to check
+
+Back in your own project, these four checks cover it.
+
+- **Are build-only packages listed under `dependencies`?** Things like Capacitor and the Prisma CLI that run only at build time belong in `devDependencies`.
+- **Do dev dependencies end up in the runtime image?** Even with a multi-stage build, copying the builder's node_modules wholesale brings them along. Install runtime dependencies separately with `--production`.
+- **Does the build cache survive to the next build?** If every build gets a fresh environment, the cache has to be stored and restored externally, with something like `type=gha`.
+- **Is `node_modules` copied before `dist`?** What rarely changes first, what changes often last.
+
+## Further cuts I looked at and skipped
+
+I evaluated two more options. Both would save more, but they bring more to look after than they save, so I left them out this time.
+
+**Keeping only the modules actually used.** The API server is bundled with `bun build`, so only a handful of packages are loaded at runtime. Scraping `require` and `import` calls out of the bundle with a regex and collecting their transitive dependencies yields about 47 packages, and copying only those brings the image down to 84MB (-68%). The catch is dynamic imports. A `require(someVariable)` whose name is decided at runtime is invisible to the regex, and the first time that feature runs you get a runtime error. Making this safe means re-collecting on every dependency change and actually exercising every dynamically loaded feature, so I shelved it.
+
+**A distroless base image.** A base with no shell, no apt and no basic utilities. For `oven/bun:1.4.4`, compressed, the default is 104MB, slim is 84MB and distroless is 58MB. Fewer packages inside also means fewer packages to audit. In exchange you cannot `sh` into the container, so debugging moves to `kubectl debug` ephemeral containers, and any probe or entrypoint script that runs under `sh` has to be rewritten. You also have to check for packages that need native libraries such as OpenSSL. Moving to slim was enough, so I did not go this far.
+
+## Summary
+
+| | What changed | Effect |
+|---|---|---|
+| Dependencies | Runtime dependencies installed separately, build-only packages moved to devDependencies, slim base image | Image size -51% |
+| Build cache | Layers saved to the GitHub Actions cache, node_modules copied before dist | Rebuild time -79%, bytes pushed -94% |
+| Checklist | The four checks above | Look at other projects with the same eyes |
+
+The whole change was dependency classification in package.json, a few lines of Dockerfile and two lines of workflow cache settings. A multi-stage build is no guarantee that your runtime image is clean. Open it in dive once and look.
