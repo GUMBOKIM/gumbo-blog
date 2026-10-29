@@ -530,31 +530,36 @@ details.evidence img {
 	font-size: 0.95rem;
 }
 
-/* Previous and next post at the end of an article */
+/* Previous and next post at the end of an article. Two equal columns so a lone
+   "next" link still sits on the right, and the header's nowrap rule is undone
+   here so long titles wrap instead of running past the content width. */
 .post-nav {
-	display: flex;
-	justify-content: space-between;
-	gap: 1.5em;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 2em;
 	margin-top: 4em;
 	padding-top: 2em;
 	border-top: 1px solid var(--border);
 	font-size: 0.95rem;
+	line-height: 1.5;
 }
 
 .post-nav a {
-	max-width: 48%;
+	min-width: 0;
 	text-decoration: none;
+	white-space: normal;
 }
 
 .post-nav .dir {
 	display: block;
+	margin-bottom: 0.4em;
 	color: var(--text-secondary);
 	font-family: var(--font-mono);
 	font-size: 0.8rem;
 }
 
 .post-nav .next {
-	margin-left: auto;
+	grid-column: 2;
 	text-align: right;
 }
 
@@ -621,6 +626,17 @@ footer a:hover {
 }
 
 @media (max-width: 600px) {
+	/* Previous/next links stack on a phone */
+	.post-nav {
+		grid-template-columns: 1fr;
+		gap: 1.5em;
+	}
+
+	.post-nav .next {
+		grid-column: 1;
+		text-align: left;
+	}
+
 	/* Company · role · period gets tight on a phone */
 	.experience .company {
 		font-size: 0.92rem;
