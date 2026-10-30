@@ -25,3 +25,8 @@ pnpm-debug.log*
 
 # Playwright MCP scratch screenshots
 .playwright-mcp/
+
+# Orca drop folder (files handed to Claude via Orca)
+.orca/
+# humanize-korean skill workspace
+_workspace/
