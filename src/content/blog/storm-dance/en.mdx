@@ -1,67 +1,71 @@
 ---
 title: "Dancing STORM With My Face On: A Deliberately Bad Paper Doll"
-description: Only the joint coordinates were pulled from the music video. A paper doll wearing my face dances them in the browser. Pose estimation, angle-based 2D rigging, and why the real version can't run in a browser
+description: Only the 3D joint coordinates were pulled from the music video. A paper doll wearing my face dances them in three.js. What pose estimation gives you, finding one person by his white shirt, and why the real version can't run in a browser
 category: useless
 date: 2026-11-02
 ---
 
 import StormDoll from '../../../components/storm/StormDoll.astro';
 
-Second entry in the [useless things series](/en/posts/useless-ui/). This time, put in a photo of your face and a paper doll in a school uniform dances the STORM choreography.
+Second entry in the [useless things series](/en/posts/useless-ui/). This time, put in a photo of your face and a paper doll in a school uniform dances the STORM choreography, from 4:18 to 4:55 of the video.
 
 <StormDoll locale="en" />
 
 - **Choose a photo** of your own face and fit it inside the oval, and the doll dances with it. The photo stays in your browser and is never sent anywhere.
-- Turn off **Classmates** to dance alone. Leave it on and fourteen copies of the same face follow half a beat behind.
-- **Show skeleton** puts the raw joint coordinates from the video in the top right. That's all the doll has to go on.
+- Drag to orbit the camera. Leave it alone and it turns slowly by itself.
+- Turn off **Classmates** to dance alone. Leave it on and fourteen copies of the same face follow half a beat behind on the bleachers.
+- **Show skeleton** puts the raw joint coordinates from the video next to the doll as a stick figure. That's all the doll has to go on.
 
 ## Why make it bad on purpose
 
 You've probably seen the GENER8ION and Yung Lean video for "STORM" (April 2026, directed by Romain Gavras): a boarding school in Leeds in 2034, a hundred boys in uniform lined up for a class photo, and that choreography. It picked up four VMA nominations this year, and then the "me doing STORM" videos took over. Most were made with video-to-video motion transfer tools like Higgsfield, and the director [complained publicly](https://stereogum.com/2515160/romain-gavras-addresses-slop-copies-of-gener8ion-yung-lean-storm-video/news) about the AI copies.
 
-I wanted one too, but this blog has three rules: client-side only, zero server cost, no external APIs. A video diffusion model breaks all three. So I went the other way. Take only the joint coordinates from the video, cut the face out of a photo as an oval, and draw the body on a canvas like a paper doll. Give up on looking real from the start and you get something that runs in the browser immediately. And the badness is pretty funny.
+I wanted one too, but this blog has three rules: client-side only, zero server cost, no external APIs. A video diffusion model breaks all three. So I went the other way. Take only the joint coordinates from the video, cut the face out of a photo as an oval, and build the body in three.js from rods and boxes like a paper doll. Give up on looking real from the start and you get something that runs in the browser immediately. And the badness is pretty funny.
 
 ## How it's built
 
 ### 1. Pulling the joints out of the video
 
-I used MediaPipe's Pose Landmarker. Give it one image and it returns the positions of 33 joints: nose, eyes, ears, shoulders, elbows, wrists, hips, knees, ankles and so on. Coordinates are 0 to 1 fractions of the frame's width and height, and each joint carries its own visibility score. Legs cut off by the frame still get estimated coordinates, but with low visibility.
+I used MediaPipe's Pose Landmarker. Give it one image and it returns the positions of 33 joints: nose, eyes, ears, shoulders, elbows, wrists, hips, knees, ankles and so on. It gives them two ways: as 2D positions on the image, and as **3D coordinates in metres** with the origin between the hips. The 3D set is what makes a turn come out as a turn. Each joint also carries a visibility score; legs cut off by the frame still get estimated coordinates, but with low visibility.
 
-I saved the music video locally and ran the frames through Python. My first pass simply took "the biggest person nearest the centre", but with a hundred people moving at once the tracker kept hopping to a neighbour. Only after adding a preference for whoever's shoulders were closest to the previous frame's pick did it stick to Yung Lean. Shot changes still break it, so I kept one 16-second stretch where the central figure is large.
+I saved the music video locally and ran 37 seconds from 4:18 through Python at 15 frames per second. The problem was a hundred people in every frame. My first pass took "the biggest person nearest the centre", which hopped to a neighbour every few frames. Preferring whoever was closest to the previous pick helped until it locked onto the wrong person and followed him instead.
 
-Then cleanup. Frames where the shoulders sit below the hips or the person drifts to the edge of the frame mean the tracker grabbed someone else, so those are dropped. Gaps are interpolated from their neighbours and a three-frame average takes the jitter out. Keep the 15 of the 33 joints the doll needs, store coordinates as integers from 0 to 1000, and 16 seconds at 15 frames per second comes to a 43KB JSON file. Those numbers are the only thing on the page. Not a single frame of video is included.
+In the end I found him by his shirt. In this scene Yung Lean is the only one without a blazer, in a white shirt among a hundred navy jackets. Convert the frame to HSV, take the largest bright, unsaturated blob, and that's the shirt. Crop a body-sized window around it, scale it up, run the pose model on that, and keep only a pose whose torso sits on the blob. Even in wide shots where he's five percent of the frame, this holds.
 
-### 2. Angles only, never raw positions
+One stretch still got away. After the smoking close-up he turns and walks into the crowd for nine seconds showing only his back, and the model kept grabbing the faces of the boys around him. I cut it. What's left is three seconds of close-up and 24 seconds of standing still, the crowd starting to heave, and the group choreography.
 
-Connect the raw coordinates and you get the stick figure under "Show skeleton". It moves when the camera moves, changes size when the shot changes, and sends hidden legs off somewhere strange.
+Cleanup goes like this. If the shoulders jump more than eight percent of the frame in one step, that's someone else, so the frame is dropped. Gaps are interpolated from their neighbours and a three-frame average takes the jitter out. One more thing: MediaPipe's 3D coordinates are relative to the camera, so a camera looking down tilts everyone backwards. Since most frames are standing, I took the median of the hips-to-shoulders direction and rotated the whole clip until it pointed straight up. It came to about 11 degrees. Keep 17 of the 33 joints, store millimetres as integers, and 27 seconds comes to 113KB of JSON. Those numbers are the only thing on the page. Not a single frame of video is included.
 
-The paper doll works differently. Arm length, leg length and torso length are fixed, and the video contributes only the angle of each bone: shoulder to elbow, elbow to wrist, hip to shoulder, and so on. Put the origin at the hip centre and attach bones one by one at those angles and the doll appears.
+### 2. Rods between the coordinates
+
+With 3D coordinates there's hardly any rigging. Put a sphere at each joint in a three.js scene, a cylinder between each pair, and every frame stretch and turn the cylinder to fit. A unit cylinder is made once; its position is the midpoint, its length the distance, and its orientation the quaternion that turns the up vector toward the second point.
 
 ```ts
-const torsoAngle = angle(hipCenter, shoulderCenter);
-const neckBase = polar(origin, torsoAngle, RIG.torso);
-const shoulderL = polar(neckBase, shoulderAngle, RIG.shoulderHalf);
-const elbowL = polar(shoulderL, angle(shoulderL_src, elbowL_src), RIG.upperArm);
-const wristL = polar(elbowL, angle(elbowL_src, wristL_src), RIG.foreArm);
+function fitCylinder(m: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3, radius: number) {
+	const dir = b.clone().sub(a);
+	m.position.copy(a).addScaledVector(dir, 0.5);
+	m.quaternion.setFromUnitVectors(UP, dir.clone().normalize());
+	m.scale.set(radius, dir.length(), radius);
+}
 ```
 
-That's the whole of 2D rigging. Whether the camera zooms or the dancer is anywhere in the frame, the angles stay the same, so the doll dances in place. Only the sideways movement of the hips in the video is taken separately, to add a little sway.
+The torso is one box. Take hip centre to shoulder centre as up, the shoulder line as right, their cross product as forward, and you have a frame to fit a shoulder-width by torso-length box into. The tie is a thin bar on its front. The head is a sphere between the ears, and the direction from ear centre to nose is where the face points, so the face oval is glued ten centimetres out along it. Turn around and the face disappears and you see the back of the head, which is the reward for doing this in 3D.
 
-Hidden joints remember their angle. The source segment is mostly upper body, so knee and ankle visibility drops often, and a leg that snaps every time that happens looks awful. The angle updates only when both joints are clearly visible; otherwise the last one holds. The doll's legs are honestly about half guesswork.
+The data is 15 frames per second and the screen draws 60, so the position is interpolated between neighbouring frames. To keep the feet off thin air, the whole doll is raised or lowered each frame until the lower ankle touches the floor.
 
-Head roll is the angle between the two ears, and how far the head is turned comes from how far the nose sits from the midpoint of the ears. Squeeze the face oval by that much and push it toward the nose, and it passes for looking sideways.
+three.js comes from npm and goes into the bundle. It isn't fetched from someone else's server; it lives in this blog's static files, so it will still run in a few years. The whole library would be big, but only what's used survives bundling, and gzipped that is 187KB.
 
 ### 3. The face is cut out as an oval
 
 The original plan was to run MediaPipe's face segmentation in the browser and trace the hairline automatically. But MediaPipe for the browser needs a wasm runtime and a model file from a CDN, several megabytes together. I could vendor them into the repository, but a glued-on paper doll didn't seem to need that.
 
-So a human does the cutting. Choose a photo and a canvas with an oval appears. Drag to fit your face, scroll or pinch to resize. On confirm, the oval region is copied to a new canvas and multiplied, using the `destination-in` composite mode, by a radial gradient that fades at the edge. A white border goes around it for the paper look.
+So a human does the cutting. Choose a photo and a canvas with an oval appears. Drag to fit your face, scroll or pinch to resize. On confirm, the oval region is copied to a new canvas and multiplied, using the `destination-in` composite mode, by a radial gradient that fades at the edge. That canvas becomes a three.js texture on an oval plane, with a sheet of white paper behind it.
 
 The photo comes in through `<input type="file">` and is used only as an `Image` object. There is no path to a server.
 
 ### 4. Classmates
 
-The fun of the original is a hundred people doing the same thing. So fourteen more stand behind. They play the same motion data a few frames late, smaller, darker, and in blazers, each with their own angle memory. They all have the same face. This is the worst part and the funniest.
+The fun of the original is a hundred people doing the same thing. So two rows of bleachers go behind, with fourteen more dolls on them. They play the same motion data a few frames late, a little smaller, in navy blazers. They all have the same face. This is the worst part and the funniest.
 
 ## Why the real version can't run in a browser
 
@@ -71,6 +75,6 @@ Pose estimation sits at the opposite end. The model is a few megabytes and its w
 
 ## Wrapping up
 
-My favourite thing about the result is switching on "Show skeleton". The stick figure in the corner and the paper doll in the middle are visibly looking at the same numbers. Those numbers are the only thing taken from the video. Everything else is drawn.
+My favourite thing about the result is switching on "Show skeleton". The stick figure beside the doll and the doll itself are visibly looking at the same numbers. Those numbers are the only thing taken from the video. Everything else is drawn. The legs flail now and then because the source is mostly upper-body shots and the model guessed them, and I left that alone. Bad is the concept.
 
-The doll's code is in the [repository](https://github.com/GUMBOKIM/gumbo-blog/tree/main/src/components/storm), and the Python scripts that extracted and cleaned the joints are in [scripts/storm-pose](https://github.com/GUMBOKIM/gumbo-blog/tree/main/scripts/storm-pose). They're the MediaPipe Pose Landmarker example with one extra condition for following the person in the middle.
+The doll's code is in the [repository](https://github.com/GUMBOKIM/gumbo-blog/tree/main/src/components/storm), and the Python scripts that find the white shirt, extract the joints and clean them are in [scripts/storm-pose](https://github.com/GUMBOKIM/gumbo-blog/tree/main/scripts/storm-pose).

@@ -18,7 +18,9 @@
     "@astrojs/mdx": "^8.0.1",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.3.3"
+    "@types/three": "^0.187.0",
+    "astro": "^7.3.3",
+    "three": "^0.187.0"
   },
   "allowScripts": {
     "esbuild": true

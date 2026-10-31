@@ -1,337 +1,254 @@
 /**
- * A paper doll in a school uniform that dances the "Storm" choreography with your face on it.
+ * A 3D paper doll in a school uniform that dances a stretch of the "Storm" choreography with
+ * your face on it, rendered with three.js.
  *
- * The motion is a list of 2D joint positions pulled from the music video with MediaPipe Pose
- * (see dance.json). Only the *angles* of the bones are taken from that data; the doll has
- * fixed limb lengths, so it is a puppet driven by joint angles rather than a tracing of the
- * video. The face is cut out of a photo in the browser and never leaves it.
+ * The motion is MediaPipe's *world* landmarks pulled from the music video (dance.json): 3D
+ * joint positions in metres with the origin between the hips. The doll is built from simple
+ * meshes that are re-fitted between those joints every frame, so it is a puppet strung on the
+ * data rather than a tracing of the video. The face is cut out of a photo in the browser and
+ * never leaves it.
  */
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import dance from './dance.json';
-
-const TAU = Math.PI * 2;
 
 /* ---------------------------------------------------------------- data */
 
-const J = Object.fromEntries(dance.joints.map((name, i) => [name, i])) as Record<(typeof dance.joints)[number], number>;
-const STRIDE = dance.joints.length * 3;
+type JointName = (typeof dance.joints)[number];
+const J = Object.fromEntries(dance.joints.map((name, i) => [name, i])) as Record<JointName, number>;
+const STRIDE = dance.joints.length * 4;
 const FPS = dance.fps;
-const ASPECT = dance.aspect;
-
-interface Clip {
-	n: number;
-	d: number[];
-}
-const clips: Clip[] = dance.clips;
+const clips: { n: number; d: number[] }[] = dance.clips;
 const totalFrames = clips.reduce((sum, c) => sum + c.n, 0);
 
-/** x in video aspect units (so angles are not distorted), y in 0..1, visibility 0..1 */
-function joint(frame: number, name: keyof typeof J): [number, number, number] {
+const scratch = new THREE.Vector3();
+
+/** Joint position at an integer frame, in three.js space (metres, y up, z toward the viewer) */
+function jointAt(frame: number, name: JointName, out: THREE.Vector3) {
 	let f = ((frame % totalFrames) + totalFrames) % totalFrames;
 	for (const clip of clips) {
 		if (f < clip.n) {
-			const o = f * STRIDE + J[name] * 3;
-			return [(clip.d[o] / 1000) * ASPECT, clip.d[o + 1] / 1000, clip.d[o + 2] / 100];
+			const o = f * STRIDE + J[name] * 4;
+			// MediaPipe: x right, y down, z toward the camera is negative
+			return out.set(clip.d[o] / 1000, -clip.d[o + 1] / 1000, -clip.d[o + 2] / 1000);
 		}
 		f -= clip.n;
 	}
-	return [0, 0, 0];
+	return out.set(0, 0, 0);
 }
 
-/* ---------------------------------------------------------------- rig */
+/** Linear blend between the two surrounding frames so 15fps data moves at 60fps */
+function joint(time: number, name: JointName, out: THREE.Vector3) {
+	const f0 = Math.floor(time);
+	const t = time - f0;
+	jointAt(f0, name, out);
+	if (t > 0) {
+		jointAt(f0 + 1, name, scratch);
+		// Don't blend across the loop seam
+		if ((f0 + 1) % totalFrames !== 0) out.lerp(scratch, t);
+	}
+	return out;
+}
 
-/** Bone lengths relative to shoulder width = 1 */
-const RIG = {
-	shoulderHalf: 0.5,
-	hipHalf: 0.36,
-	torso: 1.25,
-	neck: 0.22,
-	headRadius: 0.46,
-	upperArm: 0.78,
-	foreArm: 0.72,
-	thigh: 1.0,
-	shin: 0.95,
+/* ---------------------------------------------------------------- doll */
+
+const COLOR = {
+	shirt: 0xf4f1ea,
+	blazer: 0x1c2233,
+	trousers: 0x23262e,
+	skin: 0xe8c4a8,
+	tie: 0x2b3f66,
+	shoe: 0x111111,
+	paper: 0xfffdf5,
 };
 
-interface Pose {
-	/** every point in doll units, origin at the hip centre, y down */
-	hipL: [number, number];
-	hipR: [number, number];
-	shoulderL: [number, number];
-	shoulderR: [number, number];
-	neck: [number, number];
-	head: [number, number];
-	headAngle: number;
-	headTurn: number;
-	elbowL: [number, number];
-	elbowR: [number, number];
-	wristL: [number, number];
-	wristR: [number, number];
-	kneeL: [number, number];
-	kneeR: [number, number];
-	ankleL: [number, number];
-	ankleR: [number, number];
-	/** how far the hips moved sideways in the video, in shoulder widths */
-	sway: number;
-	bob: number;
-}
-
-const angleOf = (a: [number, number, number], b: [number, number, number]) => Math.atan2(b[1] - a[1], b[0] - a[0]);
-const polar = (from: [number, number], angle: number, len: number): [number, number] => [
-	from[0] + Math.cos(angle) * len,
-	from[1] + Math.sin(angle) * len,
+const BONES: [JointName, JointName, number, 'top' | 'leg'][] = [
+	['shoulderL', 'elbowL', 0.045, 'top'],
+	['elbowL', 'wristL', 0.04, 'top'],
+	['shoulderR', 'elbowR', 0.045, 'top'],
+	['elbowR', 'wristR', 0.04, 'top'],
+	['hipL', 'kneeL', 0.06, 'leg'],
+	['kneeL', 'ankleL', 0.05, 'leg'],
+	['hipR', 'kneeR', 0.06, 'leg'],
+	['kneeR', 'ankleR', 0.05, 'leg'],
 ];
 
-/** Angles that persist while a joint is hidden, so a limb out of frame holds instead of flailing */
-class AngleMemory {
-	private held = new Map<string, number>();
-	get(key: string, a: [number, number, number], b: [number, number, number], fallback: number) {
-		if (a[2] > 0.45 && b[2] > 0.45) {
-			const angle = angleOf(a, b);
-			this.held.set(key, angle);
-			return angle;
+const UP = new THREE.Vector3(0, 1, 0);
+const va = new THREE.Vector3();
+const vb = new THREE.Vector3();
+const vc = new THREE.Vector3();
+const vd = new THREE.Vector3();
+const mat = new THREE.Matrix4();
+const quat = new THREE.Quaternion();
+
+class Doll {
+	readonly group = new THREE.Group();
+	/** Height of whatever this doll stands on */
+	floor = 0;
+	private readonly bones: THREE.Mesh[] = [];
+	private readonly torso: THREE.Mesh;
+	private readonly tie: THREE.Mesh;
+	private readonly head: THREE.Mesh;
+	private readonly face: THREE.Mesh;
+	private readonly paper: THREE.Mesh;
+	private readonly hands: THREE.Mesh[];
+	private readonly feet: THREE.Mesh[];
+	private readonly joints: THREE.Mesh[];
+	private readonly faceMaterial: THREE.MeshBasicMaterial;
+
+	constructor(blazer: boolean, faceTexture: THREE.Texture) {
+		const top = new THREE.MeshStandardMaterial({ color: blazer ? COLOR.blazer : COLOR.shirt, roughness: 0.9 });
+		const leg = new THREE.MeshStandardMaterial({ color: COLOR.trousers, roughness: 0.9 });
+		const skin = new THREE.MeshStandardMaterial({ color: COLOR.skin, roughness: 0.8 });
+		const cyl = new THREE.CylinderGeometry(1, 1, 1, 10, 1);
+		for (const [, , r, kind] of BONES) {
+			const m = new THREE.Mesh(cyl, kind === 'leg' ? leg : top);
+			m.userData.radius = r;
+			this.bones.push(m);
+			this.group.add(m);
 		}
-		return this.held.get(key) ?? fallback;
+		// Round the elbows, knees and shoulders so the limbs read as one piece
+		const sphere = new THREE.SphereGeometry(1, 12, 10);
+		this.joints = (['elbowL', 'elbowR', 'kneeL', 'kneeR', 'shoulderL', 'shoulderR'] as JointName[]).map((name) => {
+			const m = new THREE.Mesh(sphere, name.startsWith('knee') ? leg : top);
+			m.userData.name = name;
+			m.scale.setScalar(name.startsWith('knee') ? 0.058 : 0.047);
+			this.group.add(m);
+			return m;
+		});
+		this.torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), top);
+		this.group.add(this.torso);
+		this.tie = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.012), new THREE.MeshStandardMaterial({ color: COLOR.tie }));
+		this.group.add(this.tie);
+		this.hands = [0, 1].map(() => {
+			const m = new THREE.Mesh(sphere, skin);
+			m.scale.setScalar(0.05);
+			this.group.add(m);
+			return m;
+		});
+		this.feet = [0, 1].map(() => {
+			const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.22), new THREE.MeshStandardMaterial({ color: COLOR.shoe }));
+			this.group.add(m);
+			return m;
+		});
+		this.head = new THREE.Mesh(sphere, skin);
+		this.head.scale.setScalar(0.105);
+		this.group.add(this.head);
+		// The face is a paper cut-out glued to the front of the head
+		this.faceMaterial = new THREE.MeshBasicMaterial({ map: faceTexture, transparent: true, side: THREE.DoubleSide });
+		// Ovals, not rectangles: a circle scaled to the face's proportions, UVs span its bounding box
+		const oval = new THREE.CircleGeometry(0.5, 40);
+		this.face = new THREE.Mesh(oval, this.faceMaterial);
+		this.face.scale.set(0.21, 0.252, 1);
+		this.paper = new THREE.Mesh(oval, new THREE.MeshBasicMaterial({ color: COLOR.paper, side: THREE.DoubleSide }));
+		this.paper.scale.set(0.235, 0.28, 1);
+		this.group.add(this.paper);
+		this.group.add(this.face);
+	}
+
+	setFace(texture: THREE.Texture) {
+		this.faceMaterial.map = texture;
+		this.faceMaterial.needsUpdate = true;
+	}
+
+	/** Re-fit every mesh to the joints at `time` (in frames) */
+	pose(time: number) {
+		// Plant the lower foot on the ground instead of hanging the doll from its hips
+		const lowest = Math.min(joint(time, 'ankleL', va).y, joint(time, 'ankleR', vb).y);
+		this.group.position.y = this.floor - lowest + 0.03;
+		this.bones.forEach((m, i) => {
+			const [a, b, r] = BONES[i];
+			joint(time, a, va);
+			joint(time, b, vb);
+			fitCylinder(m, va, vb, r);
+		});
+		for (const m of this.joints) m.position.copy(joint(time, m.userData.name as JointName, va));
+
+		// Torso: a box whose up axis runs hips → shoulders and whose right axis runs along the shoulders
+		const sl = joint(time, 'shoulderL', va).clone();
+		const sr = joint(time, 'shoulderR', vb).clone();
+		const hl = joint(time, 'hipL', vc).clone();
+		const hr = joint(time, 'hipR', vd).clone();
+		const shoulderC = sl.clone().add(sr).multiplyScalar(0.5);
+		const hipC = hl.clone().add(hr).multiplyScalar(0.5);
+		const up = shoulderC.clone().sub(hipC);
+		const height = Math.max(up.length(), 0.2);
+		up.normalize();
+		const right = sl.clone().sub(sr);
+		right.sub(up.clone().multiplyScalar(right.dot(up))).normalize();
+		const forward = new THREE.Vector3().crossVectors(right, up).normalize();
+		const width = Math.max(sl.distanceTo(sr), 0.22);
+		mat.makeBasis(right, up, forward);
+		this.torso.quaternion.setFromRotationMatrix(mat);
+		this.torso.position.copy(hipC).addScaledVector(up, height * 0.5);
+		this.torso.scale.set(width * 1.05, height * 1.1, 0.16);
+		this.tie.quaternion.copy(this.torso.quaternion);
+		this.tie.position.copy(shoulderC).addScaledVector(up, -0.17).addScaledVector(forward, 0.085);
+
+		this.hands[0].position.copy(joint(time, 'wristL', va));
+		this.hands[1].position.copy(joint(time, 'wristR', va));
+		this.feet[0].position.copy(joint(time, 'ankleL', va)).addScaledVector(forward, 0.05);
+		this.feet[0].quaternion.copy(this.torso.quaternion);
+		this.feet[1].position.copy(joint(time, 'ankleR', va)).addScaledVector(forward, 0.05);
+		this.feet[1].quaternion.copy(this.torso.quaternion);
+
+		// Head: centred between the ears, facing the nose
+		const earL = joint(time, 'earL', va).clone();
+		const earR = joint(time, 'earR', vb).clone();
+		const nose = joint(time, 'nose', vc).clone();
+		const earC = earL.clone().add(earR).multiplyScalar(0.5);
+		const headForward = nose.clone().sub(earC);
+		headForward.sub(up.clone().multiplyScalar(headForward.dot(up) * 0.5));
+		if (headForward.lengthSq() < 1e-4) headForward.copy(forward);
+		headForward.normalize();
+		const headRight = earL.clone().sub(earR).normalize();
+		const headUp = new THREE.Vector3().crossVectors(headForward, headRight).normalize();
+		if (headUp.dot(up) < 0) headUp.negate();
+		const center = earC.clone().addScaledVector(headUp, 0.02);
+		this.head.position.copy(center);
+		mat.makeBasis(headRight, headUp, headForward);
+		quat.setFromRotationMatrix(mat);
+		this.face.quaternion.copy(quat);
+		this.face.position.copy(center).addScaledVector(headForward, 0.1).addScaledVector(headUp, 0.01);
+		this.paper.quaternion.copy(quat);
+		this.paper.position.copy(center).addScaledVector(headForward, 0.097).addScaledVector(headUp, 0.01);
 	}
 }
 
-function solve(frame: number, mem: AngleMemory): Pose {
-	const nose = joint(frame, 'nose');
-	const earL = joint(frame, 'earL');
-	const earR = joint(frame, 'earR');
-	const sL = joint(frame, 'shoulderL');
-	const sR = joint(frame, 'shoulderR');
-	const hL = joint(frame, 'hipL');
-	const hR = joint(frame, 'hipR');
-	const shoulderC: [number, number, number] = [(sL[0] + sR[0]) / 2, (sL[1] + sR[1]) / 2, Math.min(sL[2], sR[2])];
-	const hipC: [number, number, number] = [(hL[0] + hR[0]) / 2, (hL[1] + hR[1]) / 2, Math.min(hL[2], hR[2])];
-	const shoulderW = Math.max(Math.hypot(sL[0] - sR[0], sL[1] - sR[1]), 0.02);
-
-	const torsoAngle = mem.get('torso', hipC, shoulderC, -Math.PI / 2);
-	const shoulderAngle = mem.get('shoulders', sR, sL, 0);
-	const hipAngle = mem.get('hips', hR, hL, 0);
-
-	const origin: [number, number] = [0, 0];
-	const hipL = polar(origin, hipAngle, RIG.hipHalf);
-	const hipR = polar(origin, hipAngle + Math.PI, RIG.hipHalf);
-	const neckBase = polar(origin, torsoAngle, RIG.torso);
-	const shoulderL = polar(neckBase, shoulderAngle, RIG.shoulderHalf);
-	const shoulderR = polar(neckBase, shoulderAngle + Math.PI, RIG.shoulderHalf);
-
-	const earAngle = mem.get('ears', earR, earL, 0);
-	const earC: [number, number, number] = [(earL[0] + earR[0]) / 2, (earL[1] + earR[1]) / 2, Math.min(earL[2], earR[2])];
-	const neckAngle = mem.get('neck', shoulderC, earC, torsoAngle);
-	const neck = polar(neckBase, neckAngle, RIG.neck);
-	const head = polar(neck, neckAngle, RIG.headRadius * 0.9);
-	// Nose offset from the ear line says which way the head is turned
-	const earDist = Math.max(Math.hypot(earL[0] - earR[0], earL[1] - earR[1]), 0.01);
-	const headTurn = Math.max(-1, Math.min(1, ((nose[0] - earC[0]) / earDist) * 2));
-
-	const upperL = mem.get('upperL', sL, joint(frame, 'elbowL'), Math.PI / 2 + 0.3);
-	const upperR = mem.get('upperR', sR, joint(frame, 'elbowR'), Math.PI / 2 - 0.3);
-	const foreL = mem.get('foreL', joint(frame, 'elbowL'), joint(frame, 'wristL'), upperL);
-	const foreR = mem.get('foreR', joint(frame, 'elbowR'), joint(frame, 'wristR'), upperR);
-	const elbowL = polar(shoulderL, upperL, RIG.upperArm);
-	const elbowR = polar(shoulderR, upperR, RIG.upperArm);
-	const wristL = polar(elbowL, foreL, RIG.foreArm);
-	const wristR = polar(elbowR, foreR, RIG.foreArm);
-
-	const thighL = mem.get('thighL', hL, joint(frame, 'kneeL'), Math.PI / 2 + 0.08);
-	const thighR = mem.get('thighR', hR, joint(frame, 'kneeR'), Math.PI / 2 - 0.08);
-	const shinL = mem.get('shinL', joint(frame, 'kneeL'), joint(frame, 'ankleL'), Math.PI / 2);
-	const shinR = mem.get('shinR', joint(frame, 'kneeR'), joint(frame, 'ankleR'), Math.PI / 2);
-	const kneeL = polar(hipL, thighL, RIG.thigh);
-	const kneeR = polar(hipR, thighR, RIG.thigh);
-	const ankleL = polar(kneeL, shinL, RIG.shin);
-	const ankleR = polar(kneeR, shinR, RIG.shin);
-
-	return {
-		hipL, hipR, shoulderL, shoulderR, neck, head,
-		headAngle: earAngle, headTurn,
-		elbowL, elbowR, wristL, wristR, kneeL, kneeR, ankleL, ankleR,
-		sway: (hipC[0] - ASPECT / 2) / shoulderW,
-		bob: hipC[1],
-	};
+/** Stretch a unit cylinder between two points with the given radius */
+function fitCylinder(m: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3, radius: number) {
+	const dir = vc.copy(b).sub(a);
+	const len = Math.max(dir.length(), 0.01);
+	m.position.copy(a).addScaledVector(dir, 0.5);
+	m.quaternion.setFromUnitVectors(UP, dir.normalize());
+	m.scale.set(radius, len, radius);
 }
 
-/* ---------------------------------------------------------------- drawing */
-
-const COLORS = {
-	bg: '#1f2126',
-	floor: '#2a2d34',
-	shirt: '#f4f1ea',
-	shirtShade: '#d9d4c8',
-	blazer: '#1c2233',
-	tie: '#2b3f66',
-	trousers: '#23262e',
-	skin: '#e8c4a8',
-	shoe: '#111',
-	outline: '#0e0f12',
-	paper: '#fffdf5',
-};
-
-interface DollStyle {
-	/** shoulder width in canvas pixels */
-	scale: number;
-	blazer: boolean;
-	tint: number;
-}
-
-function limb(ctx: CanvasRenderingContext2D, a: [number, number], b: [number, number], width: number, color: string) {
-	ctx.strokeStyle = COLORS.outline;
-	ctx.lineWidth = width + 3;
-	ctx.lineCap = 'round';
-	ctx.beginPath();
-	ctx.moveTo(a[0], a[1]);
-	ctx.lineTo(b[0], b[1]);
-	ctx.stroke();
-	ctx.strokeStyle = color;
-	ctx.lineWidth = width;
-	ctx.stroke();
-}
-
-function dot(ctx: CanvasRenderingContext2D, p: [number, number], r: number, color: string) {
-	ctx.fillStyle = COLORS.outline;
-	ctx.beginPath();
-	ctx.arc(p[0], p[1], r + 1.5, 0, TAU);
-	ctx.fill();
-	ctx.fillStyle = color;
-	ctx.beginPath();
-	ctx.arc(p[0], p[1], r, 0, TAU);
-	ctx.fill();
-}
-
-function drawDoll(ctx: CanvasRenderingContext2D, pose: Pose, face: HTMLCanvasElement, style: DollStyle, x: number, y: number) {
-	const s = style.scale;
-	const P = (p: [number, number]): [number, number] => [x + p[0] * s, y + p[1] * s];
-	const armW = s * 0.26;
-	const legW = s * 0.3;
-	const top = style.blazer ? COLORS.blazer : COLORS.shirt;
-
-	ctx.save();
-	if (style.tint < 1) ctx.globalAlpha = style.tint;
-
-	// Legs first so the torso sits on top of them
-	limb(ctx, P(pose.hipL), P(pose.kneeL), legW, COLORS.trousers);
-	limb(ctx, P(pose.kneeL), P(pose.ankleL), legW * 0.9, COLORS.trousers);
-	limb(ctx, P(pose.hipR), P(pose.kneeR), legW, COLORS.trousers);
-	limb(ctx, P(pose.kneeR), P(pose.ankleR), legW * 0.9, COLORS.trousers);
-	for (const ankle of [pose.ankleL, pose.ankleR]) {
-		const a = P(ankle);
-		ctx.fillStyle = COLORS.outline;
-		ctx.beginPath();
-		ctx.ellipse(a[0], a[1] + s * 0.05, s * 0.24, s * 0.12, 0, 0, TAU);
-		ctx.fill();
-		ctx.fillStyle = COLORS.shoe;
-		ctx.beginPath();
-		ctx.ellipse(a[0], a[1] + s * 0.05, s * 0.21, s * 0.095, 0, 0, TAU);
-		ctx.fill();
-	}
-
-	// Arms behind the torso
-	limb(ctx, P(pose.shoulderL), P(pose.elbowL), armW, top);
-	limb(ctx, P(pose.elbowL), P(pose.wristL), armW * 0.9, top);
-	limb(ctx, P(pose.shoulderR), P(pose.elbowR), armW, top);
-	limb(ctx, P(pose.elbowR), P(pose.wristR), armW * 0.9, top);
-	dot(ctx, P(pose.wristL), s * 0.14, COLORS.skin);
-	dot(ctx, P(pose.wristR), s * 0.14, COLORS.skin);
-
-	// Torso: a shirt (or blazer) cut from paper
-	const sl = P(pose.shoulderL);
-	const sr = P(pose.shoulderR);
-	const hl = P(pose.hipL);
-	const hr = P(pose.hipR);
-	ctx.fillStyle = top;
-	ctx.strokeStyle = COLORS.outline;
-	ctx.lineWidth = 3;
-	ctx.lineJoin = 'round';
-	ctx.beginPath();
-	ctx.moveTo(sl[0], sl[1] - s * 0.1);
-	ctx.lineTo(sr[0], sr[1] - s * 0.1);
-	ctx.lineTo(hr[0], hr[1] + s * 0.1);
-	ctx.lineTo(hl[0], hl[1] + s * 0.1);
-	ctx.closePath();
-	ctx.fill();
-	ctx.stroke();
-	// Collar and tie
-	const nk = P(pose.neck);
-	const mid: [number, number] = [(hl[0] + hr[0]) / 2, (hl[1] + hr[1]) / 2];
-	const tieEnd: [number, number] = [nk[0] + (mid[0] - nk[0]) * 0.75, nk[1] + (mid[1] - nk[1]) * 0.75];
-	ctx.fillStyle = style.blazer ? COLORS.shirt : COLORS.shirtShade;
-	ctx.beginPath();
-	ctx.moveTo(nk[0] - s * 0.18, nk[1] + s * 0.02);
-	ctx.lineTo(nk[0] + s * 0.18, nk[1] + s * 0.02);
-	ctx.lineTo(nk[0], nk[1] + s * 0.32);
-	ctx.closePath();
-	ctx.fill();
-	ctx.fillStyle = COLORS.tie;
-	ctx.beginPath();
-	ctx.moveTo(nk[0] - s * 0.07, nk[1] + s * 0.06);
-	ctx.lineTo(nk[0] + s * 0.07, nk[1] + s * 0.06);
-	ctx.lineTo(tieEnd[0] + s * 0.09, tieEnd[1]);
-	ctx.lineTo(tieEnd[0], tieEnd[1] + s * 0.12);
-	ctx.lineTo(tieEnd[0] - s * 0.09, tieEnd[1]);
-	ctx.closePath();
-	ctx.fill();
-
-	// Neck, then the face glued on top with a paper edge
-	limb(ctx, P(pose.neck), P(pose.head), s * 0.22, COLORS.skin);
-	const hc = P(pose.head);
-	const r = RIG.headRadius * s;
-	ctx.save();
-	ctx.translate(hc[0], hc[1]);
-	ctx.rotate(pose.headAngle);
-	// A turned head is a narrower cut-out shifted toward the nose
-	const squeeze = 1 - Math.abs(pose.headTurn) * 0.18;
-	ctx.translate(pose.headTurn * r * 0.12, 0);
-	ctx.scale(squeeze, 1);
-	ctx.fillStyle = COLORS.paper;
-	ctx.strokeStyle = COLORS.outline;
-	ctx.lineWidth = 3;
-	ctx.beginPath();
-	ctx.ellipse(0, 0, r * 1.08, r * 1.28, 0, 0, TAU);
-	ctx.fill();
-	ctx.stroke();
-	ctx.beginPath();
-	ctx.ellipse(0, 0, r, r * 1.2, 0, 0, TAU);
-	ctx.clip();
-	ctx.drawImage(face, -r, -r * 1.2, r * 2, r * 2.4);
-	ctx.restore();
-
-	ctx.restore();
-}
-
-/** Raw joints as a stick figure, for the "what the model actually gives you" view */
-function drawSkeleton(ctx: CanvasRenderingContext2D, frame: number, x: number, y: number, w: number, h: number) {
-	const pt = (name: keyof typeof J): [number, number, number] => {
-		const j = joint(frame, name);
-		return [x + (j[0] / ASPECT) * w, y + j[1] * h, j[2]];
-	};
-	const bones: [keyof typeof J, keyof typeof J][] = [
+/** The raw joints as a stick figure, for the "what the model actually gives you" view */
+class Skeleton {
+	readonly object: THREE.LineSegments;
+	private readonly pairs: [JointName, JointName][] = [
 		['shoulderL', 'shoulderR'], ['shoulderL', 'elbowL'], ['elbowL', 'wristL'], ['shoulderR', 'elbowR'], ['elbowR', 'wristR'],
 		['shoulderL', 'hipL'], ['shoulderR', 'hipR'], ['hipL', 'hipR'], ['hipL', 'kneeL'], ['kneeL', 'ankleL'],
-		['hipR', 'kneeR'], ['kneeR', 'ankleR'], ['earL', 'earR'], ['nose', 'earL'], ['nose', 'earR'],
+		['hipR', 'kneeR'], ['kneeR', 'ankleR'], ['earL', 'earR'], ['nose', 'earL'], ['nose', 'earR'], ['eyeL', 'eyeR'],
 	];
-	ctx.save();
-	ctx.fillStyle = COLORS.floor;
-	ctx.fillRect(x, y, w, h);
-	ctx.lineWidth = 2;
-	for (const [a, b] of bones) {
-		const pa = pt(a);
-		const pb = pt(b);
-		ctx.strokeStyle = `rgba(120, 200, 255, ${Math.min(pa[2], pb[2])})`;
-		ctx.beginPath();
-		ctx.moveTo(pa[0], pa[1]);
-		ctx.lineTo(pb[0], pb[1]);
-		ctx.stroke();
+	private readonly positions: Float32Array;
+
+	constructor() {
+		this.positions = new Float32Array(this.pairs.length * 6);
+		const geo = new THREE.BufferGeometry();
+		geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+		this.object = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x78c8ff }));
+		this.object.frustumCulled = false;
 	}
-	for (const name of dance.joints) {
-		const p = pt(name);
-		ctx.fillStyle = `rgba(255, 220, 90, ${p[2]})`;
-		ctx.beginPath();
-		ctx.arc(p[0], p[1], 3, 0, TAU);
-		ctx.fill();
+
+	pose(time: number) {
+		this.pairs.forEach(([a, b], i) => {
+			joint(time, a, va).toArray(this.positions, i * 6);
+			joint(time, b, vb).toArray(this.positions, i * 6 + 3);
+		});
+		this.object.geometry.attributes.position.needsUpdate = true;
 	}
-	ctx.restore();
 }
 
 /* ---------------------------------------------------------------- face cut-out */
@@ -339,28 +256,32 @@ function drawSkeleton(ctx: CanvasRenderingContext2D, frame: number, x: number, y
 const FACE_W = 200;
 const FACE_H = 240;
 
-/** A placeholder face so the doll dances before a photo is chosen */
 function placeholderFace() {
 	const c = document.createElement('canvas');
 	c.width = FACE_W;
 	c.height = FACE_H;
 	const ctx = c.getContext('2d')!;
-	ctx.fillStyle = COLORS.skin;
+	ctx.fillStyle = '#e8c4a8';
 	ctx.fillRect(0, 0, FACE_W, FACE_H);
-	ctx.fillStyle = COLORS.outline;
+	ctx.fillStyle = '#0e0f12';
 	ctx.beginPath();
-	ctx.arc(FACE_W * 0.36, FACE_H * 0.42, 7, 0, TAU);
-	ctx.arc(FACE_W * 0.64, FACE_H * 0.42, 7, 0, TAU);
+	ctx.arc(FACE_W * 0.36, FACE_H * 0.42, 7, 0, Math.PI * 2);
+	ctx.arc(FACE_W * 0.64, FACE_H * 0.42, 7, 0, Math.PI * 2);
 	ctx.fill();
 	ctx.lineWidth = 5;
-	ctx.strokeStyle = COLORS.outline;
+	ctx.strokeStyle = '#0e0f12';
 	ctx.beginPath();
 	ctx.moveTo(FACE_W * 0.38, FACE_H * 0.66);
 	ctx.lineTo(FACE_W * 0.62, FACE_H * 0.66);
 	ctx.stroke();
 	ctx.fillStyle = '#5a3a2a';
 	ctx.beginPath();
-	ctx.ellipse(FACE_W / 2, FACE_H * 0.12, FACE_W * 0.52, FACE_H * 0.2, 0, Math.PI, TAU);
+	ctx.ellipse(FACE_W / 2, FACE_H * 0.12, FACE_W * 0.52, FACE_H * 0.2, 0, Math.PI, Math.PI * 2);
+	ctx.fill();
+	// Oval mask so the placeholder matches a cut-out photo
+	ctx.globalCompositeOperation = 'destination-in';
+	ctx.beginPath();
+	ctx.ellipse(FACE_W / 2, FACE_H / 2, FACE_W / 2, FACE_H / 2, 0, 0, Math.PI * 2);
 	ctx.fill();
 	return c;
 }
@@ -379,7 +300,7 @@ class Cropper {
 	constructor(
 		readonly canvas: HTMLCanvasElement,
 		private readonly zoomInput: HTMLInputElement,
-		private readonly signal: AbortSignal,
+		signal: AbortSignal,
 	) {
 		canvas.width = 320;
 		canvas.height = 320;
@@ -389,16 +310,19 @@ class Cropper {
 		canvas.addEventListener('pointermove', (e) => this.move(e), opts);
 		canvas.addEventListener('pointerup', (e) => this.up(e), opts);
 		canvas.addEventListener('pointercancel', (e) => this.up(e), opts);
-		canvas.addEventListener('wheel', (e) => {
-			e.preventDefault();
-			this.setZoom(this.zoom * (e.deltaY < 0 ? 1.08 : 0.93));
-		}, { ...opts, passive: false });
+		canvas.addEventListener(
+			'wheel',
+			(e) => {
+				e.preventDefault();
+				this.setZoom(this.zoom * (e.deltaY < 0 ? 1.08 : 0.93));
+			},
+			{ ...opts, passive: false },
+		);
 		zoomInput.addEventListener('input', () => this.setZoom(Number(zoomInput.value)), opts);
 	}
 
 	load(image: HTMLImageElement) {
 		this.image = image;
-		// Start with the photo filling the oval's height
 		this.zoom = Math.max(this.canvas.width / image.width, this.canvas.height / image.height) * 1.1;
 		this.cx = image.width / 2;
 		this.cy = image.height / 2.4;
@@ -464,18 +388,17 @@ class Cropper {
 		ctx.scale(this.zoom, this.zoom);
 		ctx.drawImage(this.image, -this.cx, -this.cy);
 		ctx.restore();
-		// Dim everything outside the oval
 		ctx.save();
 		ctx.beginPath();
 		ctx.rect(0, 0, canvas.width, canvas.height);
-		ctx.ellipse(canvas.width / 2, canvas.height / 2, FACE_W / 2 * 1.25, FACE_H / 2 * 1.25, 0, 0, TAU);
+		ctx.ellipse(canvas.width / 2, canvas.height / 2, (FACE_W / 2) * 1.25, (FACE_H / 2) * 1.25, 0, 0, Math.PI * 2);
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
 		ctx.fill('evenodd');
 		ctx.strokeStyle = '#fff';
 		ctx.lineWidth = 2;
 		ctx.setLineDash([6, 4]);
 		ctx.beginPath();
-		ctx.ellipse(canvas.width / 2, canvas.height / 2, FACE_W / 2 * 1.25, FACE_H / 2 * 1.25, 0, 0, TAU);
+		ctx.ellipse(canvas.width / 2, canvas.height / 2, (FACE_W / 2) * 1.25, (FACE_H / 2) * 1.25, 0, 0, Math.PI * 2);
 		ctx.stroke();
 		ctx.restore();
 	}
@@ -495,7 +418,7 @@ class Cropper {
 		ctx.restore();
 		ctx.globalCompositeOperation = 'destination-in';
 		const g = ctx.createRadialGradient(FACE_W / 2, FACE_H / 2, 0, FACE_W / 2, FACE_H / 2, FACE_H / 2);
-		g.addColorStop(0.88, 'rgba(0,0,0,1)');
+		g.addColorStop(0.9, 'rgba(0,0,0,1)');
 		g.addColorStop(1, 'rgba(0,0,0,0)');
 		ctx.fillStyle = g;
 		ctx.save();
@@ -516,39 +439,95 @@ interface Widget {
 
 class Storm implements Widget {
 	private readonly canvas: HTMLCanvasElement;
-	private readonly ctx: CanvasRenderingContext2D;
+	private readonly renderer: THREE.WebGLRenderer;
+	private readonly scene = new THREE.Scene();
+	private readonly camera: THREE.PerspectiveCamera;
+	private readonly controls: OrbitControls;
 	private readonly abort = new AbortController();
 	private readonly observer: IntersectionObserver;
 	private readonly resize: ResizeObserver;
 	private readonly cropper: Cropper;
-	private readonly mem = new AngleMemory();
-	private readonly crowdMem: AngleMemory[] = [];
-	private face = placeholderFace();
+	private readonly lead: Doll;
+	private readonly crowd: { doll: Doll; lag: number }[] = [];
+	private readonly crowdGroup = new THREE.Group();
+	private readonly skeleton = new Skeleton();
+	private faceTexture: THREE.CanvasTexture;
 	private raf = 0;
 	private start = 0;
-	private crowd = true;
-	private skeleton = false;
-	private width = 0;
-	private height = 0;
 
 	constructor(private readonly root: HTMLElement) {
 		this.canvas = root.querySelector('canvas[data-stage]')!;
-		this.ctx = this.canvas.getContext('2d')!;
 		const { signal } = this.abort;
 		const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+
+		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+		this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+		this.scene.background = new THREE.Color(0x1f2126);
+		this.scene.fog = new THREE.Fog(0x1f2126, 7, 15);
+		this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 30);
+		this.camera.position.set(0.5, 1.35, 3.4);
+		this.controls = new OrbitControls(this.camera, this.canvas);
+		this.controls.target.set(0, 0.85, -0.5);
+		this.controls.enablePan = false;
+		this.controls.enableZoom = false;
+		this.controls.enableDamping = true;
+		this.controls.autoRotate = true;
+		this.controls.autoRotateSpeed = 0.6;
+		this.controls.maxPolarAngle = Math.PI * 0.52;
+		this.controls.minPolarAngle = Math.PI * 0.25;
+		// Let the page scroll vertically over the canvas on a phone; sideways drags still orbit
+		this.canvas.style.touchAction = 'pan-y';
+
+		this.scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x2a2d34, 1.1));
+		const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+		sun.position.set(2, 4, 3);
+		this.scene.add(sun);
+		const floor = new THREE.Mesh(new THREE.CircleGeometry(16, 48), new THREE.MeshStandardMaterial({ color: 0x2a2d34, roughness: 1 }));
+		floor.rotation.x = -Math.PI / 2;
+		this.scene.add(floor);
+		// Two tiers of bleachers for the class photo
+		for (const [z, h] of [
+			[-1.2, 0.22],
+			[-2.1, 0.44],
+		] as const) {
+			const step = new THREE.Mesh(new THREE.BoxGeometry(6, h, 0.9), new THREE.MeshStandardMaterial({ color: 0x33373f, roughness: 1 }));
+			step.position.set(0, h / 2, z);
+			this.scene.add(step);
+		}
+
+		this.faceTexture = this.textureFrom(placeholderFace());
+		this.lead = new Doll(false, this.faceTexture);
+		this.scene.add(this.lead.group);
+		const rows: [number, number, number, number][] = [
+			// z, floor height, count, lag in frames
+			[-1.2, 0.22, 6, 5],
+			[-2.1, 0.44, 8, 9],
+		];
+		for (const [z, h, n, lag] of rows) {
+			for (let i = 0; i < n; i++) {
+				const doll = new Doll(true, this.faceTexture);
+				doll.group.position.set(((i + 0.5) / n - 0.5) * 4.8 + Math.sin(i * 7 + z) * 0.1, h, z + Math.cos(i * 3) * 0.12);
+				doll.floor = h;
+				doll.group.scale.setScalar(0.92);
+				this.crowdGroup.add(doll.group);
+				this.crowd.push({ doll, lag: lag + (i % 3) * 2 });
+			}
+		}
+		this.scene.add(this.crowdGroup);
+		this.skeleton.object.position.set(1.4, 0.95, 0);
+		this.skeleton.object.visible = false;
+		this.scene.add(this.skeleton.object);
 
 		this.cropper = new Cropper(q('canvas[data-crop]'), q('[data-zoom]'), signal);
 		const file = q<HTMLInputElement>('[data-file]');
 		file.addEventListener('change', () => this.pick(file), { signal });
 		q('[data-ok]').addEventListener('click', () => this.confirm(), { signal });
 		q('[data-cancel]').addEventListener('click', () => this.closeCropper(), { signal });
-		q('[data-reset]').addEventListener('click', () => {
-			this.face = placeholderFace();
-		}, { signal });
+		q('[data-reset]').addEventListener('click', () => this.setFace(placeholderFace()), { signal });
 		const crowd = q<HTMLInputElement>('[data-crowd]');
-		crowd.addEventListener('change', () => (this.crowd = crowd.checked), { signal });
+		crowd.addEventListener('change', () => (this.crowdGroup.visible = crowd.checked), { signal });
 		const skel = q<HTMLInputElement>('[data-skeleton]');
-		skel.addEventListener('change', () => (this.skeleton = skel.checked), { signal });
+		skel.addEventListener('change', () => (this.skeleton.object.visible = skel.checked), { signal });
 
 		this.resize = new ResizeObserver(() => this.fit());
 		this.resize.observe(this.canvas);
@@ -562,17 +541,30 @@ class Storm implements Widget {
 		this.pause();
 		this.observer.disconnect();
 		this.resize.disconnect();
+		this.controls.dispose();
+		this.renderer.dispose();
+	}
+
+	private textureFrom(canvas: HTMLCanvasElement) {
+		const t = new THREE.CanvasTexture(canvas);
+		t.colorSpace = THREE.SRGBColorSpace;
+		return t;
+	}
+
+	private setFace(canvas: HTMLCanvasElement) {
+		this.faceTexture.dispose();
+		this.faceTexture = this.textureFrom(canvas);
+		this.lead.setFace(this.faceTexture);
+		for (const { doll } of this.crowd) doll.setFace(this.faceTexture);
 	}
 
 	private fit() {
-		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 		const w = this.canvas.clientWidth;
 		if (!w) return;
-		this.width = w;
-		this.height = Math.round(w * 0.62);
-		this.canvas.width = Math.round(w * dpr);
-		this.canvas.height = Math.round(this.height * dpr);
-		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		const h = Math.round(w * 0.62);
+		this.renderer.setSize(w, h, false);
+		this.camera.aspect = w / h;
+		this.camera.updateProjectionMatrix();
 	}
 
 	private pick(input: HTMLInputElement) {
@@ -590,7 +582,7 @@ class Storm implements Widget {
 	}
 
 	private confirm() {
-		this.face = this.cropper.cut();
+		this.setFace(this.cropper.cut());
 		this.closeCropper();
 	}
 
@@ -603,7 +595,7 @@ class Storm implements Widget {
 		this.start = performance.now();
 		const tick = (now: number) => {
 			this.raf = requestAnimationFrame(tick);
-			this.draw(((now - this.start) / 1000) * FPS);
+			this.frame(((now - this.start) / 1000) * FPS);
 		};
 		this.raf = requestAnimationFrame(tick);
 	}
@@ -613,41 +605,12 @@ class Storm implements Widget {
 		this.raf = 0;
 	}
 
-	private draw(frame: number) {
-		const { ctx, width: w, height: h } = this;
-		ctx.fillStyle = COLORS.bg;
-		ctx.fillRect(0, 0, w, h);
-		ctx.fillStyle = COLORS.floor;
-		ctx.fillRect(0, h * 0.86, w, h * 0.14);
-
-		const scale = Math.min(w, h * 1.6) * 0.13;
-		const f = Math.floor(frame);
-
-		if (this.crowd) {
-			// Classmates in blazers, a few frames behind and smaller the further back they stand
-			const rows = [
-				{ y: 0.5, s: 0.55, n: 8, lag: 9, tint: 0.5 },
-				{ y: 0.6, s: 0.7, n: 6, lag: 5, tint: 0.72 },
-			];
-			let k = 0;
-			for (const row of rows) {
-				for (let i = 0; i < row.n; i++, k++) {
-					if (!this.crowdMem[k]) this.crowdMem[k] = new AngleMemory();
-					const pose = solve(f - row.lag - (i % 3) * 2, this.crowdMem[k]);
-					const x = (w * (i + 0.5)) / row.n + Math.sin(k) * 8;
-					drawDoll(ctx, pose, this.face, { scale: scale * row.s, blazer: true, tint: row.tint }, x, h * row.y);
-				}
-			}
-		}
-
-		const pose = solve(f, this.mem);
-		const sway = Math.max(-1.5, Math.min(1.5, pose.sway)) * scale * 0.4;
-		drawDoll(ctx, pose, this.face, { scale, blazer: false, tint: 1 }, w / 2 + sway, h * 0.74);
-
-		if (this.skeleton) {
-			const sw = Math.min(w * 0.3, 220);
-			drawSkeleton(ctx, f, w - sw - 10, 10, sw, sw / ASPECT);
-		}
+	private frame(time: number) {
+		this.lead.pose(time);
+		if (this.crowdGroup.visible) for (const { doll, lag } of this.crowd) doll.pose(time - lag);
+		if (this.skeleton.object.visible) this.skeleton.pose(time);
+		this.controls.update();
+		this.renderer.render(this.scene, this.camera);
 	}
 }
 
