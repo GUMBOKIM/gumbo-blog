@@ -1,0 +1,179 @@
+---
+/**
+ * Paper-doll "Storm" dance widget. Pick a photo, crop your face, and the doll (plus a class
+ * of blazer-wearing clones) dances the choreography pulled from the music video.
+ */
+import type { Locale } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const t = {
+	ko: {
+		pick: '사진 고르기',
+		reset: '기본 얼굴로',
+		crowd: '반 친구들',
+		skeleton: '뼈대 보기',
+		zoom: '확대',
+		ok: '이 얼굴로',
+		cancel: '취소',
+		hint: '사진은 브라우저 안에서만 처리되고 어디로도 전송되지 않습니다. 본인 얼굴로 해 주세요.',
+		cropHint: '드래그해서 얼굴을 타원 안에 맞추세요',
+		label: '교복 입은 종이인형이 춤추는 화면',
+	},
+	en: {
+		pick: 'Choose a photo',
+		reset: 'Default face',
+		crowd: 'Classmates',
+		skeleton: 'Show skeleton',
+		zoom: 'Zoom',
+		ok: 'Use this face',
+		cancel: 'Cancel',
+		hint: 'The photo is processed in your browser and never sent anywhere. Please use your own face.',
+		cropHint: 'Drag to fit your face inside the oval',
+		label: 'A paper doll in a school uniform, dancing',
+	},
+}[locale];
+---
+
+<div class="storm" data-storm>
+	<canvas data-stage aria-label={t.label}></canvas>
+	<div class="bar">
+		<label class="button">
+			{t.pick}
+			<input type="file" accept="image/*" data-file hidden />
+		</label>
+		<button type="button" data-reset>{t.reset}</button>
+		<label class="check"><input type="checkbox" data-crowd checked /> {t.crowd}</label>
+		<label class="check"><input type="checkbox" data-skeleton /> {t.skeleton}</label>
+	</div>
+	<p class="hint">{t.hint}</p>
+	<div class="cropper" data-cropper hidden>
+		<canvas data-crop></canvas>
+		<div class="tools">
+			<p class="hint">{t.cropHint}</p>
+			<label class="zoom">{t.zoom} <input type="range" data-zoom /></label>
+			<div class="actions">
+				<button type="button" data-ok class="primary">{t.ok}</button>
+				<button type="button" data-cancel>{t.cancel}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	import { mountAll, unmountAll } from './widget';
+	document.addEventListener('astro:page-load', mountAll);
+	document.addEventListener('astro:before-swap', unmountAll);
+</script>
+
+<style>
+	.storm {
+		margin: 2em 0;
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+	}
+
+	canvas[data-stage] {
+		display: block;
+		width: 100%;
+		border-radius: 6px;
+		background: #1f2126;
+	}
+
+	.bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5em 1em;
+		margin: 0.6em 0 0.2em;
+	}
+
+	.button,
+	button {
+		display: inline-block;
+		padding: 0.35em 0.8em;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-secondary);
+		color: var(--text);
+		font: inherit;
+		line-height: 1.4;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.button:hover,
+	button:hover {
+		border-color: var(--text-secondary);
+	}
+
+	button.primary {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.check {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35em;
+		cursor: pointer;
+	}
+
+	.hint {
+		margin: 0.3em 0;
+		color: var(--text-secondary);
+		font-size: 0.78rem;
+		line-height: 1.6;
+	}
+
+	.cropper {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1em;
+		margin-top: 0.8em;
+		padding: 1em;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-secondary);
+	}
+
+	.cropper[hidden] {
+		display: none;
+	}
+
+	canvas[data-crop] {
+		width: 320px;
+		max-width: 100%;
+		border-radius: 4px;
+		background: #000;
+		touch-action: none;
+		cursor: grab;
+	}
+
+	.tools {
+		flex: 1 1 12em;
+		display: flex;
+		flex-direction: column;
+		gap: 0.8em;
+		justify-content: center;
+	}
+
+	.zoom {
+		display: flex;
+		align-items: center;
+		gap: 0.6em;
+	}
+
+	.zoom input {
+		flex: 1;
+	}
+
+	.actions {
+		display: flex;
+		gap: 0.5em;
+	}
+</style>
