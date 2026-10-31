@@ -1,14 +1,14 @@
-// Creates an empty post in both languages: node scripts/new-post.mjs <slug> [life|dev]
+// Creates an empty post in both languages: node scripts/new-post.mjs <slug> [life|dev|useless]
 // Layout: src/content/blog/<slug>/{ko,en}.md  (+ an assets/ folder for its images)
 import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 
 const [slug, category = 'life'] = process.argv.slice(2);
 if (!slug) {
-	console.error('Usage: npm run post <slug> [life|dev]');
+	console.error('Usage: npm run post <slug> [life|dev|useless]');
 	process.exit(1);
 }
-if (!['life', 'dev'].includes(category)) {
-	console.error(`Unknown category "${category}". Use life or dev.`);
+if (!['life', 'dev', 'useless'].includes(category)) {
+	console.error(`Unknown category "${category}". Use life, dev or useless.`);
 	process.exit(1);
 }
 

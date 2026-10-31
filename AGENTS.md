@@ -6,7 +6,7 @@ Astro 정적 블로그. 배포 주소는 https://blog.daeheekim.dev 이고, 저�
 ## 글 쓰기
 
 ```bash
-npm run post <slug> [life|dev]   # ko/en 두 파일을 한 번에 만든다
+npm run post <slug> [life|dev|useless]   # ko/en 두 파일을 한 번에 만든다
 npm run dev                      # http://localhost:4321
 ```
 
@@ -15,7 +15,7 @@ npm run dev                      # http://localhost:4321
   본문 이미지는 마크다운 `![설명](./assets/이름.jpg)`으로 넣으면 Astro가 최적화한다.
   커스텀 HTML(예: `<img class>`, `<details>`)에서 폴더 안 이미지를 쓰려면 그 글을 `.mdx`로 두고 `import`해서 쓴다
   (예: `hometax-open-redirect`). 그 외 자산(파비콘 등)만 `public/`에 둔다.
-- frontmatter: `title`, `date`, `category`(`life` 개인 / `dev` 개발) 필수. `description`, `draft: true` 선택.
+- frontmatter: `title`, `date`, `category`(`life` 개인 / `dev` 개발 / `useless` 쓸데없는 인터랙티브 UI 시리즈) 필수. `description`, `draft: true` 선택.
 - `date`를 미래로 적으면 예약 발행이다. 그 날짜 전에는 아예 빌드되지 않아 URL도 생기지 않고,
   Actions가 하루 한 번(한국 시간 09:10쯤) 다시 빌드하면서 때가 되면 올라온다. `npm run dev`에서는 미리 보인다.
   하루 한 번이라 시·분까지 맞추는 건 안 되고 날짜 단위로 생각하면 된다.
