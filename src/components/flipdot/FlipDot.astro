@@ -1,0 +1,252 @@
+---
+/**
+ * Interactive flip-dot display for the flip-dot post.
+ * `demo` is the full board with clock, text, drawing and camera inputs;
+ * `compare` shows the same gray picture as a plain threshold and as Floyd–Steinberg dithering.
+ */
+import type { Locale } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+	variant?: 'demo' | 'compare';
+}
+
+const { locale, variant = 'demo' } = Astro.props;
+
+const strings = {
+	ko: {
+		clock: '시계',
+		text: '텍스트',
+		draw: '그리기',
+		camera: '카메라',
+		car: 'IONIQ 5 N',
+		sound: '소리',
+		clear: '지우기',
+		threshold: '임계값',
+		dither: '디더링',
+		replay: '다시 뒤집기',
+		placeholder: 'HELLO',
+		msgUnlock: '아무 버튼이나 누르면 소리가 켜집니다',
+		msgDraw: '드래그해서 그립니다. 노란 점을 누르면 지웁니다',
+		msgCameraWait: '카메라 켜는 중…',
+		msgCameraOn: '영상은 브라우저 안에서만 처리되고 어디로도 전송되지 않습니다',
+		msgCameraFail: '카메라를 열 수 없습니다',
+		msgFlips: '뒤집힌 횟수 {n}',
+		label: '플립닷 디스플레이',
+	},
+	en: {
+		clock: 'Clock',
+		text: 'Text',
+		draw: 'Draw',
+		camera: 'Camera',
+		car: 'IONIQ 5 N',
+		sound: 'Sound',
+		clear: 'Clear',
+		threshold: 'Threshold',
+		dither: 'Dithering',
+		replay: 'Flip again',
+		placeholder: 'HELLO',
+		msgUnlock: 'Press any button to enable sound',
+		msgDraw: 'Drag to paint. Press a yellow dot to erase',
+		msgCameraWait: 'Starting camera…',
+		msgCameraOn: 'Video never leaves your browser',
+		msgCameraFail: 'Could not open the camera',
+		msgFlips: '{n} flips',
+		label: 'Flip-dot display',
+	},
+}[locale];
+---
+
+{
+	variant === 'demo' ? (
+		<div
+			class="flipdot"
+			data-flipdot="demo"
+			data-msg-unlock={strings.msgUnlock}
+			data-msg-draw={strings.msgDraw}
+			data-msg-camera-wait={strings.msgCameraWait}
+			data-msg-camera-on={strings.msgCameraOn}
+			data-msg-camera-fail={strings.msgCameraFail}
+			data-msg-flips={strings.msgFlips}
+		>
+			<div class="bar">
+				<div class="group" role="group">
+					<button type="button" data-mode="clock" aria-pressed="true">{strings.clock}</button>
+					<button type="button" data-mode="text" aria-pressed="false">{strings.text}</button>
+					<button type="button" data-mode="draw" aria-pressed="false">{strings.draw}</button>
+					<button type="button" data-mode="camera" aria-pressed="false">{strings.camera}</button>
+					<button type="button" data-mode="car" aria-pressed="false">{strings.car}</button>
+				</div>
+				<button type="button" class="sound" data-sound aria-pressed="true">
+					<span class="on">🔊</span><span class="off">🔇</span> {strings.sound}
+				</button>
+			</div>
+			<canvas aria-label={strings.label} />
+			<div class="bar tools">
+				<input
+					type="text"
+					data-text
+					placeholder={strings.placeholder}
+					maxlength="42"
+					autocomplete="off"
+					autocapitalize="characters"
+					spellcheck="false"
+					hidden
+				/>
+				<button type="button" data-clear hidden>{strings.clear}</button>
+				<div class="group" role="group" data-dither-group hidden>
+					<button type="button" data-dither="threshold" aria-pressed="true">{strings.threshold}</button>
+					<button type="button" data-dither="fs" aria-pressed="false">{strings.dither}</button>
+				</div>
+				<span class="status" data-status />
+			</div>
+		</div>
+	) : (
+		<div class="flipdot compare" data-flipdot="compare">
+			<div class="pair">
+				<figure>
+					<canvas data-which="threshold" aria-label={strings.threshold} />
+					<figcaption>{strings.threshold}</figcaption>
+				</figure>
+				<figure>
+					<canvas data-which="fs" aria-label={strings.dither} />
+					<figcaption>Floyd–Steinberg</figcaption>
+				</figure>
+			</div>
+			<div class="bar tools">
+				<button type="button" data-replay>{strings.replay}</button>
+			</div>
+		</div>
+	)
+}
+
+<script>
+	import { mountAll, unmountAll } from './widget';
+	// ClientRouter swaps page content without reloading this module, so (re)mount on every
+	// page load and release the camera and animation loop before the page goes away.
+	document.addEventListener('astro:page-load', mountAll);
+	document.addEventListener('astro:before-swap', unmountAll);
+</script>
+
+<style>
+	.flipdot {
+		margin: 2em 0;
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		background: #0c0c0c;
+		border-radius: 6px;
+		/* Prevents the long-press callout on phones while drawing */
+		-webkit-touch-callout: none;
+		user-select: none;
+	}
+
+	.bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5em 0.8em;
+		margin: 0.6em 0;
+	}
+
+	.bar .sound {
+		margin-left: auto;
+	}
+
+	.group {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.3em;
+	}
+
+	/* The display rules above would otherwise override the hidden attribute */
+	[hidden] {
+		display: none !important;
+	}
+
+	button {
+		padding: 0.35em 0.8em;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-secondary);
+		color: var(--text);
+		font: inherit;
+		line-height: 1.4;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	button:hover {
+		border-color: var(--text-secondary);
+	}
+
+	button[aria-pressed='true'] {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.sound .off,
+	.sound[aria-pressed='true'] .on {
+		display: inline;
+	}
+
+	.sound .on,
+	.sound[aria-pressed='true'] .off {
+		display: none;
+	}
+
+	input {
+		flex: 1 1 10em;
+		min-width: 0;
+		padding: 0.35em 0.6em;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-secondary);
+		color: var(--headings);
+		font: inherit;
+		text-transform: uppercase;
+	}
+
+	input:focus {
+		outline: none;
+		border-color: var(--accent);
+	}
+
+	.status {
+		flex: 1 1 100%;
+		min-height: 1.6em;
+		color: var(--text-secondary);
+		font-size: 0.78rem;
+		line-height: 1.6;
+	}
+
+	.pair {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1em;
+	}
+
+	figure {
+		margin: 0;
+	}
+
+	figcaption {
+		margin-top: 0.4em;
+		color: var(--text-secondary);
+		font-size: 0.78rem;
+		text-align: center;
+	}
+
+	@media (max-width: 600px) {
+		/* The main board goes edge to edge on a phone so the dots stay legible */
+		.flipdot:not(.compare) canvas {
+			width: calc(100% + var(--gutter) * 2);
+			margin-left: calc(var(--gutter) * -1);
+			border-radius: 0;
+		}
+	}
+</style>

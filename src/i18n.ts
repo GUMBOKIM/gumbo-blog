@@ -24,6 +24,7 @@ export const ui = {
 		all: 'all',
 		life: 'life',
 		dev: 'dev',
+		'useless': 'useless',
 		other: 'en',
 	},
 	en: {
@@ -36,6 +37,7 @@ export const ui = {
 		all: 'all',
 		life: 'life',
 		dev: 'dev',
+		'useless': 'useless',
 		other: 'ko',
 	},
 } satisfies Record<Locale, Record<string, string>>;
