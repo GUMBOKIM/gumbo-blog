@@ -1,7 +1,7 @@
 ---
 /**
- * Paper-doll "Storm" dance widget. Pick a photo, crop your face, and the doll (plus a class
- * of blazer-wearing clones) dances the choreography pulled from the music video.
+ * The "Storm" class-photo scene. Pick a photo, crop your face, and you are the one in the white
+ * shirt while the class heaves around you the way the crowd does in the video.
  */
 import type { Locale } from '../../i18n';
 
@@ -16,25 +16,27 @@ const t = {
 		pick: '사진 고르기',
 		reset: '기본 얼굴로',
 		crowd: '반 친구들',
-		skeleton: '뼈대 보기',
+		allFaces: '전부 내 얼굴',
+		camera: '뮤비 카메라로',
 		zoom: '확대',
 		ok: '이 얼굴로',
 		cancel: '취소',
 		hint: '사진은 브라우저 안에서만 처리되고 어디로도 전송되지 않습니다. 본인 얼굴로 해 주세요.',
 		cropHint: '드래그해서 얼굴을 타원 안에 맞추세요',
-		label: '교복 입은 종이인형이 춤추는 화면',
+		label: 'STORM 뮤직비디오의 단체 사진 장면을 3D로 다시 만든 화면',
 	},
 	en: {
 		pick: 'Choose a photo',
 		reset: 'Default face',
 		crowd: 'Classmates',
-		skeleton: 'Show skeleton',
+		allFaces: 'My face on everyone',
+		camera: 'Back to the video camera',
 		zoom: 'Zoom',
 		ok: 'Use this face',
 		cancel: 'Cancel',
 		hint: 'The photo is processed in your browser and never sent anywhere. Please use your own face.',
 		cropHint: 'Drag to fit your face inside the oval',
-		label: 'A paper doll in a school uniform, dancing',
+		label: 'The class-photo scene from the STORM video, rebuilt in 3D',
 	},
 }[locale];
 ---
@@ -48,7 +50,8 @@ const t = {
 		</label>
 		<button type="button" data-reset>{t.reset}</button>
 		<label class="check"><input type="checkbox" data-crowd checked /> {t.crowd}</label>
-		<label class="check"><input type="checkbox" data-skeleton /> {t.skeleton}</label>
+		<label class="check"><input type="checkbox" data-allfaces /> {t.allFaces}</label>
+		<button type="button" data-camera hidden>{t.camera}</button>
 	</div>
 	<p class="hint">{t.hint}</p>
 	<div class="cropper" data-cropper hidden>
@@ -81,7 +84,7 @@ const t = {
 		display: block;
 		width: 100%;
 		border-radius: 6px;
-		background: #1f2126;
+		background: #c2c7cc;
 	}
 
 	.bar {
@@ -141,7 +144,8 @@ const t = {
 		background: var(--bg-secondary);
 	}
 
-	.cropper[hidden] {
+	.cropper[hidden],
+	button[hidden] {
 		display: none;
 	}
 

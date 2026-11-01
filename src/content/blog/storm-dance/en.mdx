@@ -1,80 +1,71 @@
 ---
-title: "Dancing STORM With My Face On: A Deliberately Bad Paper Doll"
-description: Only the 3D joint coordinates were pulled from the music video. A paper doll wearing my face dances them in three.js. What pose estimation gives you, finding one person by his white shirt, and why the real version can't run in a browser
+title: "Putting My Face in the STORM Class-Photo Scene"
+description: Only the lead's 3D joints and a motion field of the crowd are taken from the video, and three.js shoots the scene again. Where pose estimation gave up in front of a hundred boys, how optical flow moves a crowd, and how the shirt's size brings back the camera's zoom
 category: useless
 date: 2026-11-02
 ---
 
 import StormDoll from '../../../components/storm/StormDoll.astro';
 
-Second entry in the [useless things series](/en/posts/useless-ui/). This time, put in a photo of your face and a paper doll in a school uniform dances the STORM choreography, from 4:18 to 4:55 of the video.
+Second entry in the [useless things series](/en/posts/useless-ui/). Put in a photo of your face and it goes on the boy in the white shirt, while a hundred and thirty-five others in blazers heave around you the way they do in the video. It's the close-up at 4:18 and the class-photo scene from 4:30 to 4:55.
 
 <StormDoll locale="en" />
 
-- **Choose a photo** of your own face and fit it inside the oval, and the doll dances with it. The photo stays in your browser and is never sent anywhere.
-- Drag to orbit the camera. Leave it alone and it turns slowly by itself.
-- Turn off **Classmates** to dance alone. Leave it on and fourteen copies of the same face follow half a beat behind on the bleachers.
-- **Show skeleton** puts the raw joint coordinates from the video next to the doll as a stick figure. That's all the doll has to go on.
+- **Choose a photo** of your own face and fit it inside the oval, and the lead wears it. The photo stays in your browser and is never sent anywhere.
+- **My face on everyone** gives all hundred and thirty-six the same face.
+- The camera pulls back from the same spot at the same speed as the video. Drag to take it over, and **Back to the video camera** returns it.
+- Turn off **Classmates** to stand there alone.
 
-## Why make it bad on purpose
+## Why
 
-You've probably seen the GENER8ION and Yung Lean video for "STORM" (April 2026, directed by Romain Gavras): a boarding school in Leeds in 2034, a hundred boys in uniform lined up for a class photo, and that choreography. It picked up four VMA nominations this year, and then the "me doing STORM" videos took over. Most were made with video-to-video motion transfer tools like Higgsfield, and the director [complained publicly](https://stereogum.com/2515160/romain-gavras-addresses-slop-copies-of-gener8ion-yung-lean-storm-video/news) about the AI copies.
+This is the famous scene from the GENER8ION and Yung Lean video for "STORM" (April 2026, directed by Romain Gavras): a boarding school in Leeds in 2034, a hundred boys in uniform lined up on the steps of a brick schoolhouse for a class photo, and only the one in the white shirt stands still while the rest fold and rear back in waves. It picked up four VMA nominations this year, and then the "me doing STORM" videos took over. Most were made with video-to-video motion transfer tools like Higgsfield, and the director [complained publicly](https://stereogum.com/2515160/romain-gavras-addresses-slop-copies-of-gener8ion-yung-lean-storm-video/news) about the AI copies.
 
-I wanted one too, but this blog has three rules: client-side only, zero server cost, no external APIs. A video diffusion model breaks all three. So I went the other way. Take only the joint coordinates from the video, cut the face out of a photo as an oval, and build the body in three.js from rods and boxes like a paper doll. Give up on looking real from the start and you get something that runs in the browser immediately. And the badness is pretty funny.
+I wanted one too, but this blog has three rules: client-side only, zero server cost, no external APIs. A video diffusion model breaks all three. So I took numbers only from the video and no pixels at all: the lead's joint coordinates, a motion field of the crowd, and the speed at which the camera pulls back. Everything else is drawn again in three.js.
 
-## How it's built
+## 1. The lead, from joints
 
-### 1. Pulling the joints out of the video
+I used MediaPipe's Pose Landmarker. Give it one image and it returns 33 joints, including **3D coordinates in metres** with the origin between the hips, which is what makes a turn come out as a turn.
 
-I used MediaPipe's Pose Landmarker. Give it one image and it returns the positions of 33 joints: nose, eyes, ears, shoulders, elbows, wrists, hips, knees, ankles and so on. It gives them two ways: as 2D positions on the image, and as **3D coordinates in metres** with the origin between the hips. The 3D set is what makes a turn come out as a turn. Each joint also carries a visibility score; legs cut off by the frame still get estimated coordinates, but with low visibility.
+The problem was a hundred people in every frame. "The biggest person nearest the centre" hopped to a neighbour every few frames. In the end I found him by his shirt. Yung Lean is the only one without a blazer in this scene, so convert the frame to HSV, take the largest bright, unsaturated blob, and that's him. Crop a body-sized window around it, scale it up, run the pose model on that, and keep only a pose whose torso sits on the blob. It holds even in wide shots where he's five percent of the frame. The nine seconds where he smokes, turns and walks into the crowd show only his back, so I cut them.
 
-I saved the music video locally and ran 37 seconds from 4:18 through Python at 15 frames per second. The problem was a hundred people in every frame. My first pass took "the biggest person nearest the centre", which hopped to a neighbour every few frames. Preferring whoever was closest to the previous pick helped until it locked onto the wrong person and followed him instead.
+Pinning the coordinates straight onto the doll looked wrong. That was the first version, and someone who saw it asked whether I'd made the dance bad on purpose. I hadn't. MediaPipe's 3D coordinates flatten the torso when someone bends, stretch the arms, and tilt the whole person backwards when the camera looks down. So instead of using the coordinates as they are, I take only the lean. Measure the forward and sideways angle of the hips-to-shoulders direction, tilt a fixed-length spine by that much, and put the shoulders back on top of it. The arms take their tracked bone directions, capped in length, and hang from the new shoulders; the head is re-hung at its tracked position relative to the shoulders. The hand going to the mouth and the fiddling with the collar survive, and the folding torso doesn't. The legs never appear in the frame, so they just stand.
 
-In the end I found him by his shirt. In this scene Yung Lean is the only one without a blazer, in a white shirt among a hundred navy jackets. Convert the frame to HSV, take the largest bright, unsaturated blob, and that's the shirt. Crop a body-sized window around it, scale it up, run the pose model on that, and keep only a pose whose torso sits on the blob. Even in wide shots where he's five percent of the frame, this holds.
+## 2. The crowd, from flow
 
-One stretch still got away. After the smoking close-up he turns and walks into the crowd for nine seconds showing only his back, and the model kept grabbing the faces of the boys around him. I cut it. What's left is three seconds of close-up and 24 seconds of standing still, the crowd starting to heave, and the group choreography.
+At first I tried to extract the crowd one person at a time too. I wrote the script: tile the frame, find several people per tile, merge the overlaps, use each boy's spot as his identity and stitch the frames together. The result was zero to two people per frame. While they stand still it finds a dozen; the moment the dance starts they all vanish. Bodies folded at ninety degrees, navy blazer on navy blazer, heads down at the chest of the boy beside them: the pose model does not see people there.
 
-Cleanup goes like this. If the shoulders jump more than eight percent of the frame in one step, that's someone else, so the frame is dropped. Gaps are interpolated from their neighbours and a three-frame average takes the jitter out. One more thing: MediaPipe's 3D coordinates are relative to the camera, so a camera looking down tilts everyone backwards. Since most frames are standing, I took the median of the hips-to-shoulders direction and rotated the whole clip until it pointed straight up. It came to about 11 degrees. Keep 17 of the 33 joints, store millimetres as integers, and 27 seconds comes to 113KB of JSON. Those numbers are the only thing on the page. Not a single frame of video is included.
+So I stopped counting people and measured motion. Optical flow (Farneback) between consecutive frames gives, per pixel, where it moved and by how much. Divide the frame into a 12×7 grid, average each cell, and use the lead's shirt height as the unit. The camera is slowly pulling back, which puts an outward drift across the whole frame; that gets removed by fitting one zoom-plus-translation to every pixel by least squares and subtracting it. What's left is the people.
 
-### 2. Rods between the coordinates
+More useful than the speed itself is how far a patch has been pushed lately. Accumulate each cell's velocity with a leak (0.7 s time constant) and you get a displacement that piles up downwards during a bow and comes back on the way up. Alongside it, the speed's magnitude minus the magnitude of the averaged speed is kept as a "shaking" value, the part of the motion that isn't going anywhere. At 12 frames per second, 84 cells and three integers per cell, 25 seconds is 240KB, or 56KB compressed.
 
-With 3D coordinates there's hardly any rigging. Put a sphere at each joint in a three.js scene, a cylinder between each pair, and every frame stretch and turn the cylinder to fit. A unit cylinder is made once; its position is the midpoint, its length the distance, and its orientation the quaternion that turns the up vector toward the second point.
+In the 3D scene each figure's spot is expressed relative to the lead, "so many shirts to the right and so many below", and every frame that spot is turned into a grid cell using where the shirt was and how big it was at that moment. As the camera pulls back and the shirt shrinks, the same figure moves to a nearer cell. If the cell's displacement points down, the figure bows; up, it rears back and throws its head; sideways, it leans; if the shaking is high, it balls its fists at its chest and trembles. Each figure gets a slightly different gain and delay so the four or five in one cell don't move like clones.
 
-```ts
-function fitCylinder(m: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3, radius: number) {
-	const dir = b.clone().sub(a);
-	m.position.copy(a).addScaledVector(dir, 0.5);
-	m.quaternion.setFromUnitVectors(UP, dir.clone().normalize());
-	m.scale.set(radius, dir.length(), radius);
-}
-```
+What comes out is a map of which way the crowd at each spot was pushed at each moment, and since that is what the crowd choreography in this scene consists of, the wave crossing from left to right, the front rows folding first and the back rows following, all land at the same time as the video.
 
-The torso is one box. Take hip centre to shoulder centre as up, the shoulder line as right, their cross product as forward, and you have a frame to fit a shoulder-width by torso-length box into. The tie is a thin bar on its front. The head is a sphere between the ears, and the direction from ear centre to nose is where the face points, so the face oval is glued ten centimetres out along it. Turn around and the face disappears and you see the back of the head, which is the reward for doing this in 3D.
+One thing came out of it as a bonus. I had assumed 4:30 to 4:55 was several cuts, but the frame differences say there are none. It's one shot that pulls slowly from a medium to a wide.
 
-The data is 15 frames per second and the screen draws 60, so the position is interpolated between neighbouring frames. To keep the feet off thin air, the whole doll is raised or lowered each frame until the lower ankle touches the floor.
+## 3. The set and the camera
 
-three.js comes from npm and goes into the bundle. It isn't fetched from someone else's server; it lives in this blog's static files, so it will still run in a few years. The whole library would be big, but only what's used survives bundling, and gzipped that is 187KB.
+The bricks are a repeating texture of staggered rectangles drawn on a canvas; the arched doorway is a Shape extruded backwards into a dark recess; the maroon canopy over it is one bent band; the windows are canvases with white lattices; and the "Class of 2034" banners on either side are canvases with rotated text. The steps have eight tiers with seventeen boys on each. The lead is in the middle of the fifth row.
 
-### 3. The face is cut out as an oval
+A hundred and thirty-six figures as separate meshes would be over three thousand draw calls. Instead the cylinders, spheres, boxes, ties and face ovals are each one InstancedMesh, with a transform and a colour per figure. The whole crowd is five draw calls, and skin and hair colours are instance colours. Every frame computes 17 joints per figure and fits 24 parts between them, and it runs at 120fps on a laptop.
 
-The original plan was to run MediaPipe's face segmentation in the browser and trace the hairline automatically. But MediaPipe for the browser needs a wasm runtime and a model file from a CDN, several megabytes together. I could vendor them into the repository, but a glued-on paper doll didn't seem to need that.
+The camera is my favourite part. Since the shirt's height as a fraction of the frame was measured for every frame, a long lens (16 degrees) just needs the distance at which the shirt appears at that fraction: distance = shirt height ÷ (2 × tan(fov/2) × fraction). It pulls back exactly as the video does. Where the shirt sat in the frame was measured too, so the lead lands in the same place on screen. The three-second close-up at the start uses a wide lens (36 degrees) 85 centimetres in front of the face, with the camera between the heads of the two boys in the row ahead.
 
-So a human does the cutting. Choose a photo and a canvas with an oval appears. Drag to fit your face, scroll or pinch to resize. On confirm, the oval region is copied to a new canvas and multiplied, using the `destination-in` composite mode, by a radial gradient that fades at the edge. That canvas becomes a three.js texture on an oval plane, with a sheet of white paper behind it.
+## 4. The face
 
-The photo comes in through `<input type="file">` and is used only as an `Image` object. There is no path to a server.
+Choose a photo and a canvas with an oval appears. Drag to fit your face, scroll or pinch to resize. On confirm, the oval region is copied to a new canvas and multiplied, using the `destination-in` composite mode, by a radial gradient that fades at the edge. That canvas becomes a three.js texture on the front of the head. The photo comes in through `<input type="file">` and is used only as an `Image` object. There is no path to a server.
 
-### 4. Classmates
-
-The fun of the original is a hundred people doing the same thing. So two rows of bleachers go behind, with fourteen more dolls on them. They play the same motion data a few frames late, a little smaller, in navy blazers. They all have the same face. This is the worst part and the funniest.
+The classmates share one texture of eyes, brows and a mouth on a white ground, multiplied by each figure's skin colour as an instance colour, so they look different. "My face on everyone" swaps that texture for your photo.
 
 ## Why the real version can't run in a browser
 
-The "me doing STORM" videos are video-to-video motion transfer. The motion of the original is the condition, and the model generates new pixels of the person in the photo performing it. That's a video diffusion model: billions of parameters, tens of gigabytes of memory, and somewhere between tens of seconds and minutes on a server GPU for a clip a few seconds long. Even with WebGPU, the weights won't fit in a page, and even if they did you'd be staring at a progress bar instead of touching anything. Send it to a server and every run costs money, and at that point it's a service, not a useless toy.
+The "me doing STORM" videos are video-to-video motion transfer. The motion of the original is the condition, and the model generates new pixels of the person in the photo performing it. That's a video diffusion model: billions of parameters, tens of gigabytes of memory, and somewhere between tens of seconds and minutes on a server GPU for a clip a few seconds long. Even with WebGPU, the weights won't fit in a page. Send it to a server and every run costs money, and at that point it's a service, not a useless toy.
 
-Pose estimation sits at the opposite end. The model is a few megabytes and its whole job is answering "where are the joints" with numbers, so it runs in real time on a phone. The doll in this post is that difference made visible. Understanding motion is cheap and rendering it is expensive. Give up on rendering and use a paper doll, and the rest is free.
+This post sits at the opposite end. Understanding the video (where the joints are, which patch moved where) is done by a model of a few megabytes or by classic image processing, and the drawing is done by three.js at sixty frames a second. The only things on the page are 113KB of joints and 56KB of flow.
 
-## Wrapping up
+## What it doesn't do
 
-My favourite thing about the result is switching on "Show skeleton". The stick figure beside the doll and the doll itself are visibly looking at the same numbers. Those numbers are the only thing taken from the video. Everything else is drawn. The legs flail now and then because the source is mostly upper-body shots and the model guessed them, and I left that alone. Bad is the concept.
+It is not the real motion of each boy in the crowd. People in the same cell move alike. The lead's legs are invented because they never appear in the video, and when his head looks the wrong way for a moment that's tracking error. The dolls are still dolls. But the hundred and thirty-five of them heaving in the same places, at the same times, in the same directions, and the camera pulling back in front of them, all come from the video, and from a distance it is that scene.
 
-The doll's code is in the [repository](https://github.com/GUMBOKIM/gumbo-blog/tree/main/src/components/storm), and the Python scripts that find the white shirt, extract the joints and clean them are in [scripts/storm-pose](https://github.com/GUMBOKIM/gumbo-blog/tree/main/scripts/storm-pose).
+The doll and set code is in the [repository](https://github.com/GUMBOKIM/gumbo-blog/tree/main/src/components/storm), and the scripts that find the shirt, extract the joints and measure the flow are in [scripts/storm-pose](https://github.com/GUMBOKIM/gumbo-blog/tree/main/scripts/storm-pose).
