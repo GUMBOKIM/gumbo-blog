@@ -4,16 +4,18 @@
  * Two kinds of data drive it, both pulled from the video and nothing else:
  *  - dance.json: the lead's 3D joints (MediaPipe world landmarks, metres, hip-centred),
  *    found by his white shirt. His upper body is strung on those; his legs are built.
- *  - crowd.json: a grid of optical flow over the whole frame, with the camera's zoom removed,
- *    integrated into "how far has this patch of crowd been pushed lately" plus a shaking
- *    term. Pose estimation can't see eighty boys folded over in navy blazers, but the flow
- *    can, so each figure in the crowd bows, rears and sways by the patch it stands in.
- * The camera follows the video's own slow zoom-out, measured from how big the shirt is.
+ *  - choreo.ts: the crowd's routine as keyframes, read off the whole-frame optical flow of the
+ *    shot (pose estimation can't see a hundred boys folded over in navy blazers, but the flow
+ *    shows one clean unison waveform). Every figure dances it, a few hundredths of a second
+ *    later per row.
+ *  - camera.json: where and how big the shirt is in every frame, so the camera follows the
+ *    video's own slow zoom-out.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import dance from './dance.json';
-import crowd from './crowd.json';
+import camera from './camera.json';
+import { choreo, type Pose } from './choreo';
 
 /* ---------------------------------------------------------------- lead data */
 
@@ -52,48 +54,21 @@ function leadJoint(t: number, name: JointName, out: THREE.Vector3) {
 	);
 }
 
-/* ---------------------------------------------------------------- crowd data */
+/* ---------------------------------------------------------------- camera data */
 
-const CROWD_FPS = crowd.fps;
-const COLS = crowd.cols;
-const ROWS = crowd.rows;
-const cells: number[][][] = crowd.cells;
-const anchors: number[][] = crowd.anchor;
-const CROWD_N = cells.length;
-/** Shirt height in metres: what one unit of the crowd field means */
+const CAM_FPS = camera.fps;
+const anchors: number[][] = camera.anchor;
+const CAM_N = anchors.length;
+/** Shirt height in metres: what the anchor's size means */
 const SHIRT = 0.55;
 
-/** Camera anchor at group time g: [shirt centre x, y in frame fractions, shirt height in frame fractions] */
+/** Camera anchor at shot time g: [shirt centre x, y in frame fractions, shirt height in frame fractions] */
 function anchorAt(g: number, out: number[]) {
-	const f = Math.max(0, Math.min(g * CROWD_FPS, CROWD_N - 1));
+	const f = Math.max(0, Math.min(g * CAM_FPS, CAM_N - 1));
 	const f0 = Math.floor(f);
-	const f1 = Math.min(f0 + 1, CROWD_N - 1);
+	const f1 = Math.min(f0 + 1, CAM_N - 1);
 	const k = f - f0;
 	for (let i = 0; i < 3; i++) out[i] = anchors[f0][i] * (1 - k) + anchors[f1][i] * k;
-	return out;
-}
-
-/** Flow field sample at group time g for a patch `u` shirt-widths right of and `v` below the lead */
-function fieldAt(g: number, u: number, v: number, out: number[]) {
-	const f = g * CROWD_FPS;
-	if (f < 0 || f >= CROWD_N) {
-		out[0] = out[1] = out[2] = 0;
-		return out;
-	}
-	const f0 = Math.floor(f);
-	const f1 = Math.min(f0 + 1, CROWD_N - 1);
-	const k = f - f0;
-	const a = anchors[f0];
-	const x = a[0] + u * a[2];
-	const y = a[1] + v * a[2];
-	const c = Math.max(0, Math.min(COLS - 1, Math.floor(x * COLS)));
-	const r = Math.max(0, Math.min(ROWS - 1, Math.floor(y * ROWS)));
-	const cell = r * COLS + c;
-	const p = cells[f0][cell];
-	const q = cells[f1][cell];
-	out[0] = (p[0] * (1 - k) + q[0] * k) / 100;
-	out[1] = (p[1] * (1 - k) + q[1] * k) / 100;
-	out[2] = (p[2] * (1 - k) + q[2] * k) / 40;
 	return out;
 }
 
@@ -128,17 +103,10 @@ const ARMS_UP: Partial<Record<JointName, [number, number, number]>> = {
 const UPPER = new Set<JointName>(['nose', 'eyeL', 'eyeR', 'earL', 'earR', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'wristL', 'wristR']);
 const HEAD = new Set<JointName>(['nose', 'eyeL', 'eyeR', 'earL', 'earR']);
 
-interface Motion {
-	bend: number; // forward bow at the hips, radians (negative rears back)
-	sway: number; // side lean, radians
-	headTilt: number; // extra nod of the head, radians (negative throws it back)
-	armsUp: number; // 0 hanging, 1 fists at the chest
-	shake: number; // trembling amplitude
+interface Motion extends Pose {
 	seed: number;
 	time: number;
 }
-
-const tmp = new THREE.Vector3();
 
 /** Write the 17 joints of a procedural figure into `out` (xyz per joint) */
 function proceduralPose(m: Motion, out: Float32Array) {
@@ -146,48 +114,61 @@ function proceduralPose(m: Motion, out: Float32Array) {
 	const sb = Math.sin(m.bend);
 	const cs = Math.cos(m.sway);
 	const ss = Math.sin(m.sway);
-	const ch = Math.cos(m.headTilt);
-	const sh = Math.sin(m.headTilt);
+	const ch = Math.cos(m.head);
+	const sh = Math.sin(m.head);
+	const bendTorso = (p: [number, number, number]) => {
+		// bow about the hips, then lean sideways
+		const y1 = p[1] * cb - p[2] * sb;
+		p[2] = p[1] * sb + p[2] * cb;
+		p[1] = y1;
+		const x1 = p[0] * cs - p[1] * ss;
+		p[1] = p[0] * ss + p[1] * cs;
+		p[0] = x1;
+	};
+	const p: [number, number, number] = [0, 0, 0];
 	for (let i = 0; i < NJ; i++) {
 		const name = NAMES[i];
 		const b = BASE[name];
-		let x = b[0];
-		let y = b[1];
-		let z = b[2];
-		const up = ARMS_UP[name];
-		if (up) {
-			x += (up[0] - x) * m.armsUp;
-			y += (up[1] - y) * m.armsUp;
-			z += (up[2] - z) * m.armsUp;
-		}
+		p[0] = b[0];
+		p[1] = b[1];
+		p[2] = b[2];
 		if (HEAD.has(name)) {
 			// nod about the neck (y = 0.5)
-			const ny = y - 0.5;
-			y = 0.5 + ny * ch - z * sh;
-			z = ny * sh + z * ch;
+			const ny = p[1] - 0.5;
+			p[1] = 0.5 + ny * ch - p[2] * sh;
+			p[2] = ny * sh + p[2] * ch;
 		}
 		if (UPPER.has(name)) {
-			// bow about the hips, then lean sideways
-			const y1 = y * cb - z * sb;
-			z = y * sb + z * cb;
-			y = y1;
-			const x1 = x * cs - y * ss;
-			y = x * ss + y * cs;
-			x = x1;
+			const up = ARMS_UP[name];
+			if (up) {
+				// fists at the chest turn with the torso; hanging arms dangle straight down from
+				// wherever the shoulder went, however far the torso is bent
+				const side = name.endsWith('L') ? 1 : -1;
+				const shoulder: [number, number, number] = [0.19 * side, 0.5, 0];
+				bendTorso(shoulder);
+				const hang = name.startsWith('elbow')
+					? [shoulder[0] + 0.04 * side, shoulder[1] - 0.27, shoulder[2] + 0.02]
+					: [shoulder[0] + 0.03 * side, shoulder[1] - 0.52, shoulder[2] + 0.06];
+				const fist: [number, number, number] = [up[0], up[1], up[2]];
+				bendTorso(fist);
+				p[0] = hang[0] + (fist[0] - hang[0]) * m.arms;
+				p[1] = hang[1] + (fist[1] - hang[1]) * m.arms;
+				p[2] = hang[2] + (fist[2] - hang[2]) * m.arms;
+			} else bendTorso(p);
 			if (m.shake > 0) {
 				const w = m.time * 58 + i * 1.7 + m.seed;
-				const a = m.shake * (name.startsWith('wrist') ? 0.05 : name.startsWith('elbow') ? 0.03 : 0.015);
-				x += Math.sin(w) * a;
-				y += Math.cos(w * 1.3) * a * 0.6;
+				const a = m.shake * (name.startsWith('wrist') ? 0.045 : name.startsWith('elbow') ? 0.03 : 0.012);
+				p[0] += Math.sin(w) * a;
+				p[1] += Math.cos(w * 1.3) * a * 0.6;
 			}
 		} else if (name.startsWith('knee')) {
 			// knees give a little when bowing
-			z += Math.max(0, m.bend) * 0.12;
-			y += Math.max(0, m.bend) * 0.03;
+			p[2] += Math.max(0, m.bend) * 0.12;
+			p[1] += Math.max(0, m.bend) * 0.03;
 		}
-		out[i * 3] = x;
-		out[i * 3 + 1] = y;
-		out[i * 3 + 2] = z;
+		out[i * 3] = p[0];
+		out[i * 3 + 1] = p[1];
+		out[i * 3 + 2] = p[2];
 	}
 }
 
@@ -649,10 +630,8 @@ const BACK = ROWS_N - 1; // the back row stands at the door
 
 interface Spot {
 	pos: THREE.Vector3;
-	u: number; // shirt-widths right of the lead on screen
-	v: number; // shirt-heights below the lead on screen
+	delay: number; // seconds behind the front row
 	gain: number;
-	delay: number;
 	motion: Motion;
 }
 
@@ -672,22 +651,16 @@ function layout() {
 			const z = ROW_Z0 - ROW_DZ * r + (hash(n + 99) - 0.5) * 0.2;
 			const spot: Spot = {
 				pos: new THREE.Vector3(x, y, z),
-				u: 0,
-				v: 0,
-				gain: 0.8 + hash(n + 13) * 0.5,
-				delay: hash(n + 31) * 0.25,
-				motion: { bend: 0, sway: 0, headTilt: 0, armsUp: 0, shake: 0, seed: hash(n + 7) * 100, time: 0 },
+				// the wave rolls back through the rows; everyone is a touch off the beat
+				delay: r * 0.035 + (hash(n + 31) - 0.5) * 0.05,
+				gain: 0.92 + hash(n + 13) * 0.16,
+				motion: { bend: 0, head: 0, arms: 0, sway: 0, shake: 0, seed: hash(n + 7) * 100, time: 0 },
 			};
 			if (r === LEAD_ROW && i === (PER_ROW - 1) / 2) {
 				spot.pos.set(0, y, ROW_Z0 - ROW_DZ * r);
 				lead = spot;
 			} else spots.push(spot);
 		}
-	}
-	// Screen offsets from the lead, in shirt units: rows behind sit higher on the tiers
-	for (const s of spots) {
-		s.u = (s.pos.x - lead!.pos.x) / SHIRT;
-		s.v = -(s.pos.y - lead!.pos.y) / SHIRT - (lead!.pos.z - s.pos.z) * 0.12;
 	}
 	return { lead: lead!, spots };
 }
@@ -960,7 +933,7 @@ class Storm implements Widget {
 	private readonly camTarget = new THREE.Vector3(0, 1, 0);
 	private readonly camPos = new THREE.Vector3(0, 1.5, 6);
 	private readonly anchor = [0.5, 0.5, 0.2];
-	private readonly field = [0, 0, 0];
+	private readonly pose: Pose = { bend: 0, head: 0, arms: 0, sway: 0, shake: 0 };
 	private raf = 0;
 	private start = 0;
 	private lastT = 0;
@@ -1127,27 +1100,15 @@ class Storm implements Widget {
 		this.lead.commit();
 
 		if (this.crowd.group.visible) {
-			const k = 1 - Math.exp(-dt * 9); // smoothing so cell boundaries don't snap
 			for (const [i, s] of this.spots.entries()) {
 				const m = s.motion;
 				m.time = t;
-				fieldAt(g - s.delay, s.u, s.v, this.field);
-				const dx = this.field[0] * s.gain;
-				const dy = this.field[1] * s.gain;
-				// A patch rarely moves a whole shirt-height, so the response saturates early
-				const soft = (d: number) => {
-					const a = Math.max(0, Math.abs(d) - 0.03);
-					return Math.sign(d) * Math.min(1, Math.pow(a / 0.18, 0.75));
-				};
-				const bend = soft(dy) * (dy > 0 ? 1.6 : 0.9);
-				const sway = -soft(dx) * 0.7;
-				const shake = Math.max(0, this.field[2] * s.gain - 0.12);
-				m.bend += (bend - m.bend) * k;
-				m.sway += (sway - m.sway) * k;
-				m.shake += (shake - m.shake) * k;
-				m.headTilt += ((bend < 0 ? 0.9 * bend : -0.35 * bend) - m.headTilt) * k;
-				const arms = Math.max(0, Math.min(1, shake * 2.5 + Math.abs(bend) * 0.9));
-				m.armsUp += (arms - m.armsUp) * k * 0.5;
+				choreo(g - s.delay, this.pose);
+				m.bend = this.pose.bend * s.gain;
+				m.head = this.pose.head * s.gain;
+				m.sway = this.pose.sway * s.gain;
+				m.arms = this.pose.arms;
+				m.shake = this.pose.shake;
 				proceduralPose(m, this.crowd.jointsOf(i));
 				this.crowd.place(i, s.pos);
 			}

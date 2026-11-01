@@ -19,6 +19,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("video"); ap.add_argument("start", type=float); ap.add_argument("end", type=float); ap.add_argument("out")
 ap.add_argument("--fps", type=float, default=12); ap.add_argument("--cols", type=int, default=12); ap.add_argument("--rows", type=int, default=7)
 ap.add_argument("--tau", type=float, default=0.7, help="displacement leak time constant (s)")
+ap.add_argument("--camera", default=None, help="also write the per-frame shirt anchor alone (what the widget's camera uses)")
 args = ap.parse_args()
 
 cap = cv2.VideoCapture(args.video)
@@ -123,4 +124,7 @@ for i in range(n):
 json.dump({"fps": args.fps, "t0": round(frames[0][0], 3), "cols": args.cols, "rows": args.rows,
            "anchor": [[round(float(a), 4) for a in A[i]] for i in range(n)],
            "cells": out_frames}, open(args.out, "w"), separators=(",", ":"))
+if args.camera:
+    json.dump({"fps": args.fps, "t0": round(frames[0][0], 3), "anchor": [[round(float(a), 4) for a in A[i]] for i in range(n)]}, open(args.camera, "w"), separators=(",", ":"))
+# the whole-frame mean of the vertical flow, which is what reads the routine off the video
 print(f"{n} frames x {C} cells -> {args.out}")
