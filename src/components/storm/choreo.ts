@@ -4,8 +4,8 @@
  * The whole-frame optical flow of the shot is one clean waveform, so the crowd is in unison:
  *  - 278.9 s: everyone folds forward (head down), rears back 0.7 s later (face to the sky),
  *    settles, folds again. Period 1.72 s, four cycles.
- *  - from 284.7 s: still rearing and folding every 1.75 s but shallower, with a side-to-side
- *    sway at exactly double that rate (period 0.875 s).
+ *  - from 284.7 s: stays reared back with a nod every 1.75 s, and a side-to-side sway at
+ *    exactly double that rate (period 0.875 s), up to about 45 degrees at first.
  *  - from 293 s: upright, fists at the chest, trembling, small nods.
  * Times are seconds into the shot (shot starts at 270.7 s of the video).
  */
@@ -28,21 +28,21 @@ const keys: Key[] = [
 ];
 // Deep fold/rear cycles: the bottom of each fold at these times
 for (const B of [9.0, 10.7, 12.45, 13.95]) {
-	if (B !== 9.0) keys.push([B - 0.6, -0.15, -0.4, 0.8]);
-	keys.push([B, 1.5, 0.7, 0.15], [B + 0.7, -0.6, -1.15, 1.0], [B + 0.95, -0.3, -0.7, 0.9]);
+	if (B !== 9.0) keys.push([B - 0.6, -0.15, -0.3, 0.8]);
+	keys.push([B, 1.5, 0.7, 0.15], [B + 0.7, -0.55, -0.75, 1.0], [B + 0.95, -0.3, -0.5, 0.9]);
 }
-// Shallower cycles under the sway
+// Reared back under the sway, with only a nod on each beat instead of a fold
 for (const B of [15.65, 17.4, 19.15, 20.9]) {
-	if (B !== 15.65) keys.push([B - 0.6, -0.5, -0.9, 1.0]);
-	keys.push([B, 0.7, 0.4, 0.6], [B + 0.75, -0.7, -1.1, 1.0], [B + 1.0, -0.5, -0.9, 1.0]);
+	if (B !== 15.65) keys.push([B - 0.6, -0.55, -0.65, 1.0]);
+	keys.push([B, -0.05, -0.25, 0.9], [B + 0.75, -0.65, -0.75, 1.0], [B + 1.0, -0.55, -0.65, 1.0]);
 }
 // Upright with fists, nodding
 keys.push(
-	[22.3, -0.35, -0.8, 1.0],
+	[22.3, -0.35, -0.5, 1.0],
 	[22.7, 0.3, 0.3, 1.0],
 	[23.15, -0.2, -0.4, 1.0],
 	[23.5, 0.3, 0.3, 1.0],
-	[24.05, -0.35, -0.7, 1.0],
+	[24.05, -0.35, -0.5, 1.0],
 	[24.4, 0.2, 0.2, 1.0],
 );
 
@@ -85,7 +85,7 @@ export function choreo(g: number, out: Pose) {
 	// Side-to-side sway from 284.7 s, fading as the shot widens
 	const s = g - 14.0;
 	if (s > -0.4 && g < 22.3) {
-		const amp = (0.5 - 0.3 * Math.max(0, Math.min(1, (g - 14) / 8))) * Math.min(1, (s + 0.4) / 0.4) * Math.min(1, (22.3 - g) / 0.4);
+		const amp = (0.75 - 0.4 * Math.max(0, Math.min(1, (g - 14) / 8))) * Math.min(1, (s + 0.4) / 0.4) * Math.min(1, (22.3 - g) / 0.4);
 		out.sway = amp * Math.cos((2 * Math.PI * s) / 0.875);
 	} else out.sway = 0;
 	return out;

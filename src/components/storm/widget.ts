@@ -434,7 +434,6 @@ class Puppets {
 		const nose = P('nose', vc).clone();
 		const earC = earL.clone().add(earR).multiplyScalar(0.5);
 		const headForward = nose.clone().sub(earC);
-		headForward.sub(up.clone().multiplyScalar(headForward.dot(up) * 0.5));
 		if (headForward.lengthSq() < 1e-4) headForward.copy(forward);
 		headForward.normalize();
 		const headRight = earL.clone().sub(earR);
