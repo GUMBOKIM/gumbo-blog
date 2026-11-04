@@ -401,6 +401,13 @@ article img {
 	cursor: zoom-in;
 }
 
+/* Phone screenshots are tall, so they show narrower than other photos */
+article img.phone {
+	max-width: 280px;
+	border: 1px solid var(--border);
+	border-radius: 1.2em;
+}
+
 /* Diagrams span the full column; they open at their drawn width rather than as a photo */
 article img.diagram {
 	max-width: 100%;
