@@ -1,160 +1,55 @@
 ---
-title: "아이폰 Safari를 AI가 DevTools처럼 쓰게 하는 플러그인 만들기"
-description: 안드로이드는 Playwright가 붙는데 아이폰은 왜 안 붙는지, 그래서 Safari Web Inspector 위에 Claude Code 플러그인을 직접 만든 이야기
+title: "AI가 아이폰 Safari를 직접 보게 만든 플러그인"
+description: pymobiledevice3 브릿지로 아이폰 Safari에 붙고, 그 위에 Claude Code 플러그인을 얹은 이야기
 category: dev
-date: 2026-11-03
+date: 2026-11-05
 ---
 
 import howItWorks from './assets/how-it-works.svg?url';
 
-요즘 프론트엔드 작업은 Claude Code에 많이 맡깁니다. 고친 화면을 Playwright로 열어 보고 콘솔 에러가 없는지, 버튼이 제자리에 있는지 확인하는 것까지 AI가 합니다. 데스크톱 브라우저에서는 이게 잘 됩니다.
-
-그런데 아이폰에서 막힙니다. 100vh가 주소창 때문에 어긋나거나, 키보드가 올라오면 화면이 밀리거나, 소리가 자동으로 안 나는 것처럼 아이폰 Safari에서만 생기는 버그가 꼭 있습니다. 이런 건 실제 아이폰에서 봐야 하는데 Playwright는 아이폰에 붙지 않습니다. 안드로이드는 되는데 말이죠.
-
-그래서 Claude Code가 USB나 Wi-Fi로 연결된 아이폰의 Safari를 DevTools처럼 다루게 해 주는 플러그인을 직접 만들었습니다. 이름은 **iPhone WebKit Inspector**이고 코드는 [GitHub](https://github.com/GUMBOKIM/iphone-webkit-inspector)에 있습니다.
+프론트엔드 작업을 Claude Code에 맡기면 고친 화면을 Playwright로 열어서 확인까지 해 줍니다. 그런데 주소창 때문에 100vh가 어긋나거나 키보드가 올라오면서 화면이 밀리는 버그는 아이폰 Safari에서 나고, 이런 건 진짜 아이폰에서 봐야 합니다. 그래서 Claude Code가 제 아이폰의 Safari를 보고 만질 수 있게 플러그인을 만들었습니다.
 
 ```
 /plugin marketplace add GUMBOKIM/iphone-webkit-inspector
 /plugin install iphone-webkit-inspector@gumbokim
 ```
 
-## 안드로이드는 되고 아이폰은 안 되는 이유
+코드는 [GitHub](https://github.com/GUMBOKIM/iphone-webkit-inspector)에 있습니다.
 
-### 안드로이드는 CDP로 바로 붙는다
+## 어떻게 붙였나
 
-Playwright는 CDP(Chrome DevTools Protocol)로 Chrome을 다룹니다. 평소 여는 DevTools 창이 브라우저와 주고받는 것도 이 CDP입니다.
+안드로이드는 쉽습니다. 안드로이드 Chrome은 Playwright가 쓰는 CDP(Chrome DevTools Protocol)를 그대로 쓰니까 `adb forward`로 포트만 이어 주면 Playwright가 바로 붙습니다.
 
-안드로이드의 Chrome과 앱 웹뷰도 똑같이 CDP를 씁니다. 휴대폰에서 USB 디버깅을 켜고 연결을 허용하면 `chrome_devtools_remote` 같은 디버그 소켓이 열리고(앱 웹뷰는 앱이 디버깅을 허용해야 합니다), `adb forward`로 이 소켓을 맥의 포트로 이어 주기만 하면 됩니다.
+아이폰 Safari는 CDP가 아니라 맥 Safari의 개발자용 메뉴가 쓰는 WebKit Web Inspector 프로토콜을 씁니다. 다행히 [pymobiledevice3](https://github.com/doronz88/pymobiledevice3)에 `webinspector cdp`라는 명령이 있습니다. 맥에 CDP 서버를 하나 열고, 거기로 들어온 명령을 WebKit 명령으로 바꿔서 USB나 Wi-Fi로 아이폰에 보내 줍니다. 아래에서는 이걸 브릿지라고 부르겠습니다.
 
-```bash
-adb forward tcp:9333 localabstract:chrome_devtools_remote
-```
+브릿지가 CDP를 받으니 Playwright도 `connectOverCDP`로 붙을 것 같았습니다. 그런데 붙여 보니 페이지가 하나도 안 잡혔습니다. 역시 안 되는구나 했는데, 알고 보니 그때 아이폰에서 Safari가 앞에 떠 있지 않았을 뿐이었습니다. Safari를 띄워 두고 다시 하니 붙습니다. 같은 사이트 안에서 페이지를 옮기고, DOM과 접근성 트리를 읽고, 입력창에 글자를 치고, 콘솔과 네트워크 이벤트를 받고, 스크린샷을 찍는 것까지 다 됐습니다. 이러면 그냥 Playwright 쓰면 되겠는데 싶었습니다.
 
-그다음 Playwright의 `connectOverCDP('http://127.0.0.1:9333')`로 붙으면 데스크톱 Chrome을 다루던 코드가 휴대폰에서도 그대로 돌아갑니다. 휴대폰과 Playwright가 처음부터 같은 프로토콜을 쓰니 통로만 열면 됩니다.
+그런데 클릭에서 막혔습니다. Playwright가 보낸 클릭은 페이지에 `mouseup`과 `click`만 `isTrusted=false`로 들어옵니다. 블로그 상단의 글 목록 링크를 눌렀는데 페이지가 안 넘어갔습니다. `page.tap()`은 `hasTouch must be enabled`라며 거절하고, `mouse.wheel`로는 스크롤이 안 됩니다. 브릿지가 옮겨 줄 수 있는 건 WebKit에 있는 기능까지라서 그 밖의 명령은 받아 줄 곳이 없습니다. 응답을 기다리거나 요청을 가로채는 건 멈춰 버리고, 화면 크기를 바꾸면 `'Emulation' domain was not found`가 납니다. 다른 사이트로 `goto`하면 Safari가 프로세스를 갈아타면서 연결이 끊깁니다. `alert()`가 뜨면 dialog 이벤트도 안 오고, 아이폰에서 닫기를 누를 때까지 페이지가 멈춰 있습니다.
 
-### 아이폰은 프로토콜이 다르다
+Claude Code가 실제로 쓰는 Playwright MCP로도 해 봤습니다. 이쪽은 더 안 좋았습니다. Safari에 뒤쪽 탭이 하나라도 있으면 그 탭이 응답을 안 해서 첫 명령부터 멈춥니다. 탭을 하나만 남기면 탭 목록, evaluate, 콘솔, 네트워크 목록, 키 입력까지는 되는데 정작 페이지 이동, 스냅샷, 스크린샷이 전부 시간 초과로 끝납니다. AI한테 쥐여 줄 만한 상태가 아니었습니다.
 
-아이폰 Safari도 원격 디버깅을 지원해서, 맥 Safari의 개발자용 메뉴에서 아이폰 탭을 열어 볼 수 있습니다. 그런데 이때 쓰는 프로토콜은 CDP가 아니라 WebKit Web Inspector 프로토콜이고 명령 이름도 주고받는 구조도 다릅니다.
+그래서 Playwright를 빼고 브릿지에 직접 붙는 도구를 만들었습니다.
 
-Playwright 쪽에서도 아이폰에 붙을 길은 없습니다. `connectOverCDP`는 Chromium 계열 전용이고, Playwright가 지원하는 WebKit은 자동화용으로 패치한 자체 빌드를 새로 띄우는 방식이라 이미 아이폰에서 돌고 있는 Safari에는 붙지 못합니다. 아이폰에 Playwright용 브라우저를 따로 깔 수도 없고요. 제가 쓰는 아이폰 Chrome도 엔진은 Safari와 같은 WebKit이라 안드로이드처럼 "Chrome이니까 CDP"가 통하지 않습니다. 대신 Safari와 같은 Web Inspector를 쓸 수 있어서, 이번에 만든 플러그인은 아이폰 Chrome에서도 동작합니다.
-
-| | 안드로이드 Chrome | 아이폰 Safari |
-|---|---|---|
-| 브라우저가 쓰는 디버깅 프로토콜 | CDP | WebKit Web Inspector |
-| 맥까지 오는 통로 | `adb forward` | USB(usbmuxd) 또는 Wi-Fi |
-| Playwright로 붙기 | `connectOverCDP`로 바로 | 안 됨 |
-
-### 브릿지를 끼워도 Playwright는 안 붙었다
-
-[pymobiledevice3](https://github.com/doronz88/pymobiledevice3)라는 파이썬 도구를 쓰면 다른 길이 하나 생깁니다. 이 도구의 `webinspector cdp` 명령은 맥에 CDP 서버를 띄우고, 들어오는 CDP 명령을 WebKit Web Inspector 명령으로 번역해 아이폰에 전달합니다. 아래에서는 이걸 브릿지라고 부르겠습니다.
-
-처음에는 여기에 Playwright를 바로 붙여 봤습니다. `connectOverCDP`로 연결은 됐지만 페이지 목록이 비어 있었고, 원인을 끝까지 파고들지는 않았습니다. Google의 chrome-devtools-mcp도 물려 봤지만 쓰려던 접근성·에뮬레이션 명령 중 일부가 지원되지 않아 기능을 다 쓸 수는 없었습니다.
-
-그래서 Playwright를 억지로 끼워 맞추는 대신 브릿지 위에 필요한 기능을 직접 얹기로 했습니다. 브릿지는 기본적인 CDP 명령을 잘 옮기고, 번역 목록에 없는 명령도 WebKit 원래 이름으로 보내면 그대로 통과시킵니다. 이 둘을 섞으니 DevTools에서 하던 일 대부분을 할 수 있었습니다.
-
-## 어떻게 만들었나
+## 무엇을 만들었나
 
 <img class="diagram" src={howItWorks} alt="플러그인 구조. 맥 안에서 Claude Code가 ios.mjs 명령을 실행하고 ios.mjs 데몬이 탭별 연결을 유지하며 콘솔과 네트워크 이벤트를 기록한다. 데몬은 Unix 소켓으로 CDP를 보내고 pymobiledevice3 브릿지가 이를 WebKit 인스펙터 프로토콜로 번역해 USB 또는 Wi-Fi로 아이폰의 Safari·Chrome 탭에 전달한다. 화면 전체 스크린샷과 FPS는 Xcode 개발자 서비스로 따로 가져온다." width="768" height="250" />
 
-### uvx로 띄우는 브릿지
+`ios.mjs`라는 Node 스크립트 하나에 명령을 다 넣고, 언제 어떻게 쓰는지 적은 `SKILL.md`와 묶어서 Claude Code 플러그인으로 만들었습니다. 의존성은 없습니다. 브릿지는 `uvx`로 띄우니까 pymobiledevice3를 따로 설치할 필요도 없습니다. `uv`만 있으면 됩니다.
 
-pymobiledevice3는 파이썬 도구를 전역에 설치하지 않고 격리된 환경에서 실행해 주는 `uvx`로 띄웁니다. 버전이 바뀌어 동작이 깨지지 않도록 직접 테스트한 버전에 고정해 두었습니다.
+탭에 처음 붙는 데 몇 초씩 걸려서 백그라운드 데몬이 탭별 연결을 들고 있게 했습니다. 한 번 붙은 뒤로는 간단한 명령이 10ms 안팎에 끝나고, 그사이 콘솔과 네트워크도 계속 기록됩니다.
 
-연결은 USB와 Wi-Fi를 둘 다 지원합니다. 케이블이 꽂혀 있으면 macOS의 usbmuxd를 거쳐 USB로 붙고 케이블이 없으면 무선으로 붙습니다. macOS는 Xcode용으로 아이폰과 무선 연결(CoreDevice 터널)을 이미 유지하고 있어서 이걸 그대로 빌려 씁니다. 제 환경에서는 한 번 페어링한 아이폰을 같은 네트워크에 두기만 하면 Finder에서 따로 설정하지 않아도 무선으로 붙었습니다.
+AI가 화면을 다루는 방식은 Playwright MCP에서 빌렸습니다. `snapshot`이 버튼과 입력창에 `@e3` 같은 번호를 붙여 주면 AI는 `tap @e3`, `type`으로 조작합니다. `tap`은 손가락 터치가 아니라 페이지 안에서 클릭을 실행하는 건데, WebKit의 `emulateUserGesture`를 켜고 실행해서 소리 재생처럼 사용자가 직접 눌러야 하는 동작도 됩니다. Playwright로는 안 넘어가던 그 글 목록 링크도 `tap`으로 누르면 넘어갑니다.
 
-### 연결을 들고 있는 데몬
+나머지는 DevTools에서 쓰던 걸 옮겼습니다. 응답 본문을 읽고, 요청을 막거나 가짜 응답으로 바꾸고, 쿠키와 저장소를 보고, CSS 규칙이 어느 파일에서 왔는지 찾고, 브레이크포인트를 걸어 한 줄씩 밟고, 성능 트레이스와 프로파일을 뜹니다. Safari 주소창과 키보드까지 나온 화면 전체 스크린샷은 브릿지가 아니라 Xcode 개발자 서비스로 찍습니다.
 
-처음에는 명령을 실행할 때마다 탭에 새로 연결했습니다. 그런데 아이폰 탭에 처음 붙는 데 5~20초가 걸렸고 가끔은 다시 붙다가 멈췄습니다. AI는 명령을 수십 번 연달아 실행하는데 매번 이러면 쓸 수가 없습니다.
+처음에는 데몬과 브릿지를 `127.0.0.1` 포트로 열었습니다. 다른 AI 도구에 코드 리뷰를 맡겼더니 웹페이지나 같은 맥의 다른 사용자가 그 포트로 아이폰에 붙을 수 있다는 지적이 나왔습니다. 맞는 말이라 둘 다 제 계정만 열 수 있는 폴더 안의 Unix 소켓으로 바꿨습니다.
 
-그래서 백그라운드 데몬이 탭마다 연결을 하나씩 계속 들고 있게 했습니다. 첫 명령에서 데몬이 뜨고, 그다음부터는 JS 한 줄 실행 같은 간단한 명령이 10ms 안팎에 끝납니다. 데몬은 작업 중인 탭의 콘솔 메시지와 네트워크 요청을 계속 기록해 두니 나중에 "아까 에러 났던 거 보여 줘"도 됩니다.
+## 안 되는 것
 
-### 스냅샷과 ref
+화면에 떠 있는 탭만 그려집니다. 스크린샷과 녹화도 그 탭만 되고, 열려 있는 다른 탭을 앞으로 가져오지도 못합니다. 주소창 버튼이나 권한 요청 창, 키보드 같은 Safari 자체 UI도 못 누릅니다. 그래서 키보드 확인은 아직 사람이 입력창을 한 번 눌러 줘야 합니다. 키보드가 뜬 뒤의 화면은 AI가 볼 수 있습니다.
 
-AI에게 스크린샷만 주고 "로그인 버튼 눌러"라고 하면 AI는 이미지를 보고 좌표를 짐작해야 해서 느리고 자주 빗나갑니다. Playwright MCP가 화면 요소 목록에 번호를 붙이는 방식으로 이 문제를 풀었는데 저도 그 방식을 빌렸습니다.
+`alert()`와 `confirm()`은 이 플러그인으로도 못 닫습니다. Web Inspector에 닫는 명령 자체가 없습니다. 한 번 뜨면 누가 닫기를 누를 때까지 페이지가 멈춥니다. 다른 사이트로 넘어가면 탭 연결이 끊기는 것도 그대로라 다시 붙어야 합니다.
 
-`snapshot`은 지금 화면에 보이는 링크, 버튼, 입력창, 제목을 `@e1`, `@e2` 같은 번호와 함께 보여 줍니다. 제 블로그 글을 아이폰에서 열고 실행하면 이렇게 나옵니다.
+iOS 18.6.2에서는 LCP와 CLS가 안 나옵니다. 네트워크 속도 제한도 없어서 아이폰 설정 → 개발자 → Network Link Conditioner로 대신합니다.
 
-```
-$ node ios.mjs snapshot
-브라우저로 플립닷 디스플레이 만들기: 딸깍 소리까지 | gumbo — https://blog.daeheekim.dev/posts/flip-dot/
-viewport 393×659, scrollY 750 (visible part only; --all for the whole page)
-@e1   link         "invidis"  192,69,38,17
-@e2   heading      "바로 눌러 보기"  20,126,354,33
-@e3   button       "시계" [pressed]  20,186,47,31
-```
-
-그러면 AI는 좌표를 짐작하지 않고 `tap @e3`, `type @e5 hello`처럼 번호로 조작합니다. 탭하려는 요소를 다른 요소가 덮고 있으면 엉뚱한 것을 누르지 않고 "가려져 있다"고 알립니다.
-
-탭은 실제 손가락 터치가 아니라 페이지 안에서 터치·클릭 이벤트를 만들어 보내는 방식입니다. 이렇게 만든 이벤트로는 소리 재생이나 전체 화면처럼 "사용자가 직접 눌렀을 때만" 허용되는 동작이 막힙니다. 다행히 WebKit에는 코드 실행을 사용자 동작으로 취급하는 옵션(`emulateUserGesture`)이 있어서 탭과 입력은 이 옵션을 켜고 실행합니다. 덕분에 버튼을 눌렀을 때 소리 재생 같은 동작이 막히지 않고 실행되는지까지 확인할 수 있습니다.
-
-### DevTools에서 하던 것들
-
-연결과 입력이 되고 나서는 평소 DevTools에서 쓰던 기능을 하나씩 명령으로 붙였습니다.
-
-| DevTools에서 하던 것 | 명령 |
-|---|---|
-| 요소의 CSS가 어느 파일 몇째 줄에서 왔는지 | `styles` |
-| 접근성 정보, 이벤트 리스너, 합성 레이어 | `a11y`, `listeners`, `layers` |
-| 콘솔, 실패한 요청, 요청·응답 본문, HAR | `logs`, `net`, `req`, `body`, `har` |
-| 요청 막기·가짜 응답 넣기, 캐시 끄기 | `block`, `mock`, `nocache` |
-| 중단점, 예외에서 멈추기, 한 줄씩 실행 | `break`, `pause-on`, `step` |
-| 쿠키, localStorage, IndexedDB | `cookies`, `storage`, `idb` |
-| 로딩 시간, 성능 트레이스, CPU 프로파일, 힙 스냅샷 | `perf`, `trace`, `profile`, `heap` |
-| 다크 모드, 페인트 영역 표시, User-Agent 바꾸기 | `media`, `paintflash`, `ua` |
-
-예를 들어 아이폰에서 이 글의 로딩 시간을 봐 달라고 하면 AI는 `perf`부터 실행합니다.
-
-```
-$ node ios.mjs perf
-page   h2  dns 52ms  connect 238ms  ttfb 242ms  html 3ms  (12.4k → 46.5k)
-events domInteractive 575ms  DOMContentLoaded 957ms  load 985ms
-paint  FCP 986ms  LCP -  CLS -
-```
-
-`trace`로 기록한 성능 트레이스는 Chrome 형식으로 저장되어서 Chrome DevTools의 Performance 탭에서 그대로 열립니다.
-
-### 브릿지가 못 옮기는 명령
-
-만들면서 시간이 가장 많이 든 부분입니다. CDP 명령을 보냈는데 브릿지가 조용히 무시하거나 결과가 이상하게 오는 경우가 꽤 있어서 그때마다 브릿지 소스를 열어 보고 다른 길을 찾았습니다.
-
-`Runtime.evaluate`는 `awaitPromise` 옵션이 무시되어서 `await` 결과를 기다리지 않습니다. 그래서 Promise를 기다려야 하는 코드는 결과를 페이지의 전역 변수에 담아 두게 하고, 값이 채워질 때까지 폴링하는 방식으로 우회했습니다. 페이지의 다른 스크립트보다 먼저 실행할 코드를 등록하는 `Page.addScriptToEvaluateOnNewDocument`도 브릿지에서 무시되어서 WebKit 고유 명령인 `Page.setBootstrapScript`를 대신 씁니다.
-
-이벤트 리스너 조회도 제가 시도한 CDP 명령으로는 실패해서 WebKit의 `DOM.getEventListenersForNode`를 씁니다. 이쪽은 부모 요소에 걸린 리스너까지 같이 알려 줘서 오히려 더 쓸모가 있었습니다.
-
-명령을 바꾸는 것만으로는 안 돼서 출력 방식이나 사용법을 바꿔 우회한 것도 두 가지 있습니다. CPU 프로파일은 샘플 사이 간격이 대부분 0으로 오다가 가끔 엄청 크게 튀어서, 밀리초 대신 "전체 샘플 중 몇 %"로 요약해 보여 줍니다. 또 다른 사이트로 이동하는 구간을 트레이스로 기록하면 결과가 거의 비어서 돌아왔습니다. Safari가 사이트를 옮길 때 프로세스를 바꾸는 것과 관련된 것으로 보여서, 같은 사이트에서 새로고침하며 기록하라고 스킬 문서에 적어 두었습니다.
-
-### 주소창과 키보드까지 찍으려면
-
-Web Inspector로 찍는 스크린샷에는 웹 페이지 영역만 담깁니다. 그런데 아이폰 버그는 주소창이나 키보드와 얽힌 경우가 많아서 Safari 주소창과 하단 툴바, 키보드까지 같이 보고 싶었습니다.
-
-이건 Xcode가 쓰는 개발자 서비스로 해결했습니다. pymobiledevice3가 이 서비스도 다루기 때문에 `shot --device`로 아이폰 화면 전체를 기기 해상도 그대로 찍습니다(제 아이폰 15 Pro에서는 1179×2556). 같은 서비스로 화면 전체의 Core Animation FPS도 읽을 수 있어서, 애니메이션을 돌리면서 프레임이 떨어지는지 숫자로 볼 수 있습니다. Safari를 띄우거나 URL을 여는 것은 Xcode의 `devicectl`로 합니다.
-
-### 로컬 포트 대신 Unix 소켓으로
-
-처음에는 데몬과 브릿지가 맥의 `127.0.0.1` 포트에서 연결을 받았습니다. 제 맥 안에서만 열리니 괜찮다고 생각했습니다. 그런데 다 만든 뒤 다른 AI 코딩 도구 두 개(Codex, Antigravity)에게 코드 리뷰를 맡겼더니 둘 다 같은 문제를 짚었습니다.
-
-localhost에만 열었다고 웹페이지의 접근까지 막히는 건 아니었습니다. 브라우저와 설정에 따라 맥에서 열어 둔 웹페이지가 `ws://127.0.0.1:...`로 WebSocket을 열 수 있고, 그러면 그 페이지가 제 아이폰 탭에서 JS를 실행할 수 있게 됩니다. 같은 맥을 쓰는 다른 사용자 계정도 그 포트에 붙을 수 있었습니다.
-
-웹페이지 쪽은 요청에 `Origin` 헤더가 있으면 거절하는 방식으로 막았지만, 그것만으로는 같은 맥의 다른 사용자까지 막을 수 없었습니다. 그래서 데몬과 브릿지를 둘 다 Unix 소켓으로 바꿨습니다. 소켓 파일은 제 계정만 열 수 있는 폴더(권한 700) 안에 두기 때문에 다른 사용자 계정은 접근할 수 없습니다. 웹페이지는 Unix 소켓에 아예 닿지 못합니다. 토큰이나 비밀값을 따로 관리할 일도 없어졌습니다.
-
-브릿지는 원래 TCP 포트로만 뜨게 되어 있어서 띄울 때 웹 서버 설정을 가로채 소켓 경로로 바꿔 끼웁니다. Node 내장 WebSocket은 TCP로만 연결되기 때문에 Unix 소켓용 WebSocket 클라이언트는 100줄 남짓으로 직접 만들었습니다.
-
-### Claude Code 플러그인으로 묶기
-
-Claude Code 플러그인은 생각보다 단순합니다. 이 플러그인은 스킬 하나가 전부입니다. `SKILL.md`에는 언제 이 스킬을 써야 하는지("아이폰에서 확인해 줘", "모바일 사파리에서 봐 줘" 같은 말), 명령을 어떤 순서로 쓰면 좋은지, 끝나면 무엇을 되돌려 놓아야 하는지를 적었습니다. 실제 명령은 Node 스크립트인 `ios.mjs`가 처리합니다. npm 의존성이 하나도 없어서 따로 설치할 것은 없습니다. 같은 저장소를 Codex 플러그인으로도 설치해 써 봤는데 그대로 동작했습니다.
-
-AI가 다른 탭을 건드리지 않게 하는 것도 스킬 문서에 적어 두었습니다. 아이폰에는 메일이나 은행처럼 개인적인 탭이 열려 있을 수 있으니 사용자가 가리킨 탭이나 자기가 연 탭에서만 작업하라고 했습니다. 코드에서도 콘솔·네트워크 기록은 작업 중인 탭에서만 켜고, 그 탭이 닫히면 다른 탭으로 조용히 넘어가지 않고 멈추게 했습니다. 그래도 읽어 온 페이지 내용은 도구 출력으로 AI 세션에 들어가니, 공유해도 괜찮은 탭에서만 쓰는 게 좋습니다.
-
-## 아직 안 되는 것
-
-스크린샷은 화면에 떠 있는 탭만 찍힙니다. 뒤에 있는 탭에서도 JS 실행, 콘솔, 네트워크는 되지만, 어느 탭을 앞으로 가져올지는 코드로 바꿀 수 없습니다.
-
-주소창 버튼, 권한 요청 창, 공유 시트, 키보드처럼 Safari 자체의 UI도 못 누릅니다. 제가 테스트한 기기에서는 `type`으로 입력창에 값을 넣어도 키보드가 올라오지 않아서, 키보드 관련 확인은 여전히 사람이 입력창을 한 번 눌러 줘야 합니다. 대신 키보드가 올라온 뒤의 화면은 `shot --device`로 찍을 수 있습니다.
-
-테스트한 iOS 18.6.2에서는 Safari가 LCP와 CLS 값을 주지 않아서 `perf`에서 이 둘은 비어 있습니다. 네트워크·CPU 속도 제한 기능도 없어서, 느린 네트워크는 아이폰 설정의 개발자 메뉴에 있는 Network Link Conditioner로 대신합니다.
-
-## 마무리
-
-필요한 건 macOS, Xcode, `uv`(`brew install uv`), Node 22 이상, 그리고 개발자 모드와 Safari의 웹 속성(Web Inspector)을 켠 iOS 17 이상 아이폰입니다. 저는 아이폰 15 Pro, iOS 18.6.2에서 테스트했습니다. 설치는 위의 두 줄이면 되고, 설정이 제대로 됐는지는 AI에게 `doctor`를 실행해 달라고 하면 단계별로 점검해 줍니다.
-
-예전에는 아이폰에서만 생기는 버그가 나오면 맥 Safari의 개발자 메뉴를 열고 손으로 들여다봤는데, 이제는 "아이폰에서 이 페이지 확인해 줘"라고 AI에게 먼저 맡겨 봅니다.
+macOS, Xcode, `uv`, Node 22 이상, 그리고 개발자 모드와 Safari 웹 속성(Web Inspector)을 켠 iOS 17 이상 아이폰이 있으면 됩니다. 설정이 맞는지는 AI에게 `doctor`를 돌려 달라고 하면 확인해 줍니다. 이 글은 iOS 18.6.2와 pymobiledevice3 11.49.2 기준입니다.

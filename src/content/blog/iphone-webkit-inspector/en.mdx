@@ -1,158 +1,55 @@
 ---
-title: "Building a plugin that lets AI use iPhone Safari like DevTools"
-description: Why Playwright attaches to Android but not to an iPhone, and how I built a Claude Code plugin on top of Safari's Web Inspector instead
+title: "A plugin that lets AI look at iPhone Safari directly"
+description: Attaching to iPhone Safari through the pymobiledevice3 bridge, and the Claude Code plugin built on top of it
 category: dev
-date: 2026-11-03
+date: 2026-11-05
 ---
 
 import howItWorks from './assets/how-it-works-en.svg?url';
 
-I hand a lot of frontend work to Claude Code these days. After editing a page, it opens it in Playwright to check for console errors and misplaced buttons on its own. On a desktop browser, that works well.
-
-It falls apart on the iPhone. Some bugs only show up in Safari on an iPhone: 100vh coming out wrong because of the address bar, the page jumping when the keyboard opens, or audio refusing to autoplay. Those have to be checked on a real phone, and Playwright can't attach to one, even though it attaches to Android without trouble.
-
-So I wrote a Claude Code plugin that lets Claude drive Safari on an iPhone connected over USB or Wi-Fi, more or less the way you'd use DevTools. It's called iPhone WebKit Inspector, and the code is on [GitHub](https://github.com/GUMBOKIM/iphone-webkit-inspector).
+When I hand frontend work to Claude Code, it opens the changed page in Playwright and checks it for me. But some bugs show up in Safari on an iPhone, like 100vh coming out wrong because of the address bar, or the page jumping when the keyboard opens, and you have to look at a real iPhone to see them. So I made a plugin that lets Claude Code see and use Safari on my iPhone.
 
 ```
 /plugin marketplace add GUMBOKIM/iphone-webkit-inspector
 /plugin install iphone-webkit-inspector@gumbokim
 ```
 
-## Why Android works and the iPhone doesn't
+The code is on [GitHub](https://github.com/GUMBOKIM/iphone-webkit-inspector).
 
-### Android: the phone already speaks CDP
+## How it attaches
 
-Playwright drives Chrome over CDP, the Chrome DevTools Protocol, which is also what the DevTools window uses to talk to the browser.
+Android is easy. Chrome on Android speaks CDP (Chrome DevTools Protocol), the same thing Playwright speaks, so you `adb forward` a port and Playwright attaches as is.
 
-Chrome and app WebViews on Android speak CDP as well. With USB debugging on and the connection approved, the phone exposes a debug socket such as `chrome_devtools_remote` (an app's WebView needs the app to allow debugging), and `adb forward` connects it to a port on the Mac:
+Safari on the iPhone doesn't speak CDP. It speaks the WebKit Web Inspector protocol, the one the Develop menu in Safari on the Mac uses. Luckily [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) has a `webinspector cdp` command. It opens a CDP server on the Mac, translates whatever comes in into WebKit commands, and sends them to the iPhone over USB or Wi-Fi. I'll call it the bridge from here on.
 
-```bash
-adb forward tcp:9333 localabstract:chrome_devtools_remote
-```
+Since the bridge takes CDP, I figured Playwright could attach with `connectOverCDP`. I tried, and it found no pages at all. I was about to write it off when I realized Safari simply wasn't in front on the phone at the time. With Safari on screen, it attached. Moving between pages on the same site, reading the DOM and the accessibility tree, typing into inputs, getting console and network events, taking screenshots, all of it worked. For a moment I thought I could just use Playwright.
 
-After that, Playwright's `connectOverCDP('http://127.0.0.1:9333')` attaches, and code written for desktop Chrome runs against the phone unchanged. Both ends already speak the same protocol, so the only job is opening a path between them.
+Then clicks broke. A click from Playwright reaches the page as nothing but `mouseup` and `click` with `isTrusted=false`. I clicked the posts link at the top of my blog and the page didn't go anywhere. `page.tap()` refuses with `hasTouch must be enabled`, and `mouse.wheel` doesn't scroll. The bridge can only carry what WebKit has, so anything beyond that has nowhere to land. Waiting for a response or intercepting a request just hangs, and resizing the viewport throws `'Emulation' domain was not found`. A `goto` to another site kills the connection, because Safari swaps processes on cross-site navigation. When an `alert()` pops up there's no dialog event, and the page sits frozen until someone taps Close on the phone.
 
-### iPhone: a different protocol
+I also tried Playwright MCP, which is what Claude Code would actually use. That was worse. If Safari has even one tab in the background, that tab never answers and everything stalls from the first command. With a single tab left, listing tabs, evaluate, console, the network list and key presses work, but navigation, snapshots and screenshots all time out. Not something you can hand to an AI.
 
-Safari on the iPhone supports remote debugging too. It's what you're using when you open an iPhone tab from the Develop menu in Safari on the Mac. That connection speaks the WebKit Web Inspector protocol, though, and its commands and message structure differ from CDP.
+So I dropped Playwright and built a tool that talks to the bridge directly.
 
-Playwright has no way in from its side either. `connectOverCDP` only works with Chromium-based browsers, and Playwright's WebKit support launches its own WebKit build patched for automation, so it can't attach to a Safari that's already running on an iPhone. You can't install a Playwright browser on the phone either. The iPhone Chrome I use runs on the same WebKit as Safari, so the Android trick of "it's Chrome, so it speaks CDP" doesn't carry over. It does expose the same Web Inspector as Safari, though, so the plugin works with iPhone Chrome too.
-
-| | Android Chrome | iPhone Safari |
-|---|---|---|
-| Debugging protocol the browser speaks | CDP | WebKit Web Inspector |
-| Path to the Mac | `adb forward` | USB (usbmuxd) or Wi-Fi |
-| Attaching with Playwright | `connectOverCDP` just works | Not possible |
-
-### Even with a bridge, Playwright wouldn't attach
-
-Another route goes through the Python tool [pymobiledevice3](https://github.com/doronz88/pymobiledevice3). Its `webinspector cdp` command runs a CDP server on the Mac, translates incoming CDP commands into WebKit Web Inspector commands, and sends them to the iPhone. I'll call it the bridge from here on.
-
-My first try was pointing Playwright at the bridge. `connectOverCDP` connected, but the page list came back empty, and I didn't dig into why. Google's chrome-devtools-mcp got further, but some of the Accessibility and Emulation commands it needed weren't supported, so I couldn't use all of it.
-
-I gave up on attaching Playwright and built the features I needed on top of the bridge instead. It translates the basic CDP commands I need, and a command it doesn't translate still goes through if you send it under its WebKit name. Between the two, most of what I'd do in DevTools was covered.
-
-## How it's built
+## What I built
 
 <img class="diagram" src={howItWorks} alt="How the plugin is put together. On the Mac, Claude Code runs ios.mjs commands. The ios.mjs daemon keeps one connection per tab and records console and network events. It sends CDP over a Unix socket to the pymobiledevice3 bridge, which translates it to the WebKit Inspector protocol and passes it over USB or Wi-Fi to the Safari or Chrome tab on the iPhone. Whole-screen screenshots and FPS come separately from Xcode developer services." width="768" height="250" />
 
-### Running the bridge with uvx
+All the commands live in one Node script, `ios.mjs`, bundled with a `SKILL.md` that tells Claude when and how to use them, and that's the Claude Code plugin. No dependencies. The bridge starts through `uvx`, so you don't install pymobiledevice3 either. You just need `uv`.
 
-pymobiledevice3 runs through `uvx`, which runs a Python tool in an isolated environment without installing anything globally. I pinned it to the version I tested.
+Attaching to a tab takes several seconds the first time, so a background daemon holds one connection per tab. After that, simple commands finish in about 10ms, and console and network keep getting recorded in between.
 
-It works over USB and Wi-Fi. With a cable plugged in, it goes through macOS's usbmuxd. Without one, it borrows the wireless connection that macOS already keeps open to the iPhone for Xcode (the CoreDevice tunnel), and in my setup a phone that had been paired once and was on the same network connected without any changes in Finder.
+The way the AI handles the screen is borrowed from Playwright MCP. `snapshot` labels buttons and inputs with numbers like `@e3`, and the AI drives the page with `tap @e3` and `type`. `tap` isn't a finger touch; it runs a click inside the page, with WebKit's `emulateUserGesture` turned on so things that need a real user action, like playing audio, work too. The posts link Playwright couldn't follow navigates fine with `tap`.
 
-### A daemon holds the connections
+The rest is what I used to do in DevTools. Read response bodies, block requests or mock them, look at cookies and storage, find which file a CSS rule came from, set breakpoints and step through code, record performance traces and profiles. Whole-screen screenshots that include Safari's address bar and the keyboard don't go through the bridge; those come from Xcode's developer services.
 
-The first version opened a new connection to the tab for every command. Attaching to an iPhone tab took 5 to 20 seconds the first time, and reconnecting sometimes hung, which ruled it out for an AI that runs dozens of commands in a row.
+At first the daemon and the bridge listened on `127.0.0.1` ports. When I had other AI tools review the code, they pointed out that a web page, or another user on the same Mac, could reach the iPhone through those ports. Fair enough, so both now use Unix sockets in a folder only my account can open.
 
-Now a background daemon keeps one connection open per tab. The first command starts it, and after that a simple command like evaluating one line of JS takes about 10ms. The daemon keeps recording console messages and network requests for the tab it's working on, so asking for "the error from earlier" works too.
+## What doesn't work
 
-### Snapshots and refs for the AI
+Only the tab on screen renders. Screenshots and recording cover that tab alone, and it can't bring another open tab to the front. Safari's own UI is out of reach too, the address bar buttons, permission prompts, the keyboard. So checking the keyboard still needs a person to tap the input once. Once the keyboard is up, the AI can see the screen.
 
-Give an AI a screenshot and ask it to tap the login button, and it has to guess coordinates from the image, which is slow and often misses. Playwright MCP gets around this by numbering the elements on screen, and I borrowed that idea.
+`alert()` and `confirm()` can't be dismissed by the plugin either. Web Inspector has no command for it. Once one opens, the page stays frozen until someone taps Close. Cross-site navigation still drops the tab connection too, so you reattach.
 
-`snapshot` lists the links, buttons, inputs and headings currently on screen, each with a number like `@e1` or `@e2`. Here's one of my blog posts open on the iPhone:
+On iOS 18.6.2, LCP and CLS don't come through. There's no network throttling either, so I use Settings → Developer → Network Link Conditioner on the iPhone instead.
 
-```
-$ node ios.mjs snapshot
-브라우저로 플립닷 디스플레이 만들기: 딸깍 소리까지 | gumbo — https://blog.daeheekim.dev/posts/flip-dot/
-viewport 393×659, scrollY 750 (visible part only; --all for the whole page)
-@e1   link         "invidis"  192,69,38,17
-@e2   heading      "바로 눌러 보기"  20,126,354,33
-@e3   button       "시계" [pressed]  20,186,47,31
-```
-
-The AI then acts by number with `tap @e3` or `type @e5 hello`. If another element covers the target, `tap` doesn't press anything and reports what's in the way.
-
-A tap doesn't touch the screen; it sends touch and click events from inside the page. Events created that way normally aren't allowed to do things that need a real user action, like starting audio or going fullscreen. WebKit has an option that runs code as if the user triggered it (`emulateUserGesture`), and taps and typing run with it turned on, so the AI can check that a button's audio playback isn't blocked.
-
-### The DevTools features
-
-Once connecting and input worked, I added the DevTools features I normally use, one command at a time.
-
-| What you'd do in DevTools | Command |
-|---|---|
-| Which file and line an element's CSS comes from | `styles` |
-| Accessibility info, event listeners, compositing layers | `a11y`, `listeners`, `layers` |
-| Console, failed requests, request and response bodies, HAR | `logs`, `net`, `req`, `body`, `har` |
-| Block requests, mock responses, disable cache | `block`, `mock`, `nocache` |
-| Breakpoints, pause on exceptions, step through | `break`, `pause-on`, `step` |
-| Cookies, localStorage, IndexedDB | `cookies`, `storage`, `idb` |
-| Load timings, performance traces, CPU profiles, heap snapshots | `perf`, `trace`, `profile`, `heap` |
-| Dark mode, paint flashing, User-Agent override | `media`, `paintflash`, `ua` |
-
-Ask it to check a post's load time on the iPhone, and the AI starts with `perf`:
-
-```
-$ node ios.mjs perf
-page   h2  dns 52ms  connect 238ms  ttfb 242ms  html 3ms  (12.4k → 46.5k)
-events domInteractive 575ms  DOMContentLoaded 957ms  load 985ms
-paint  FCP 986ms  LCP -  CLS -
-```
-
-Traces from `trace` are saved in Chrome's format and open as they are in the Performance panel of Chrome DevTools.
-
-### Working around what the bridge drops
-
-This took the most time. Often I'd send a CDP command and the bridge would ignore it quietly or return something odd, and each time I went through its source looking for another route.
-
-`Runtime.evaluate` ignores its `awaitPromise` option, so code that has to wait on a Promise stores its result in a global on the page, and the daemon polls until it's there. `Page.addScriptToEvaluateOnNewDocument`, which runs a script before the page's own, gets dropped, so I use WebKit's `Page.setBootstrapScript` instead. Listing event listeners failed with the CDP command I tried, so I call WebKit's `DOM.getEventListenersForNode`, which also reports listeners on parent elements and turned out to be more useful anyway.
-
-Two more problems couldn't be fixed by swapping commands, so I worked around them in the output and in how the tool is used. The gaps between CPU profile samples are mostly zero with the occasional huge one, so the profile shows each function's share of samples instead of milliseconds. And a trace that spans a move to another site came back nearly empty. That seems related to Safari switching processes between sites, so the skill tells the AI to trace a reload on the same site.
-
-### Capturing Safari's bars and the keyboard
-
-A Web Inspector screenshot covers only the web page. iPhone bugs often involve the address bar or the keyboard, though, so I wanted Safari's bars and the keyboard in the picture.
-
-I used the device services behind Xcode for that. pymobiledevice3 can talk to them too, so `shot --device` captures the whole iPhone screen at the device's own resolution (1179×2556 on my iPhone 15 Pro). The same services report the Core Animation FPS for the whole screen, so you can run an animation and watch for dropped frames in numbers. Launching Safari or opening a URL goes through Xcode's `devicectl`.
-
-### Unix sockets instead of local ports
-
-At first, both the daemon and the bridge listened on local TCP ports on `127.0.0.1`. I assumed that was fine since only my Mac could reach them. Once it was done, I had two other AI coding tools, Codex and Antigravity, review the code, and both flagged the same problem.
-
-Listening only on localhost didn't keep web pages out. Depending on the browser and its settings, a page open on the Mac can open a WebSocket to `ws://127.0.0.1:...`, and that page could then run JS in my iPhone tab. Other user accounts on the same Mac could reach those ports as well.
-
-Refusing requests with an `Origin` header blocked the web page case, but that did nothing about other users on the same Mac. Both now listen on Unix sockets in a folder only my account can open (mode 700). Other user accounts can't get at the sockets, web pages can't reach Unix sockets at all, and there are no tokens or secrets left to manage.
-
-The bridge only knows how to listen on a TCP port, so at startup I intercept its web server settings and swap in the socket path. Node's built-in WebSocket only connects over TCP, so I wrote a small WebSocket client for Unix sockets, a bit over 100 lines.
-
-### Packaging it as a Claude Code plugin
-
-The plugin is a single skill. `SKILL.md` says when to use it ("check this on my iPhone", "look at it in mobile Safari"), the order to run the commands in, and what to undo afterward. `ios.mjs` is the Node script that does the work, with no npm dependencies, so there's nothing to install. I also installed the same repository as a Codex plugin, and it worked there as well.
-
-An iPhone may have mail or banking open, so the skill tells the AI to work only on the tab the user pointed at or one it opened itself. In the code, console and network recording are turned on only for that tab, and if it closes, commands stop instead of quietly moving to another one. Page content the AI reads still goes into its session as tool output, so it's best used on tabs you're fine sharing.
-
-## What doesn't work yet
-
-Only the tab on screen renders. Background tabs still answer JS, console and network commands, but screenshots only capture the visible tab, and code can't bring another tab to the front.
-
-Safari's own UI is out of reach: the address bar buttons, permission prompts, share sheets and the keyboard. On the device I tested, filling an input with `type` didn't bring the keyboard up, so keyboard checks still need someone to tap the input once. After the keyboard is up, `shot --device` can capture the screen with it.
-
-On the iOS 18.6.2 device I tested, Safari didn't report LCP or CLS, so those two stay empty in `perf`. There's no network or CPU throttling either; for slow networks, turn on Network Link Conditioner in the iPhone's Developer settings.
-
-## Wrapping up
-
-You need macOS, Xcode, `uv` (`brew install uv`), Node 22 or later, and an iPhone on iOS 17 or later with Developer Mode and Safari's Web Inspector turned on. I tested on an iPhone 15 Pro with iOS 18.6.2. Install with the two commands above, then ask the AI to run `doctor` to check the setup step by step.
-
-I used to open the Develop menu in Safari on the Mac and dig through iPhone-only bugs by hand. Now I ask the AI to check the page on my iPhone.
+You need macOS, Xcode, `uv`, Node 22 or later, and an iPhone on iOS 17 or later with Developer Mode and Safari's Web Inspector turned on. Ask the AI to run `doctor` and it will check the setup. Everything here is as of iOS 18.6.2 and pymobiledevice3 11.49.2.
