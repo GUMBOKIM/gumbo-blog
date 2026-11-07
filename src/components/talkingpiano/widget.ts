@@ -1,15 +1,14 @@
 /**
- * The talking-piano widget: pick a movie line (or record your own voice), see it as a piano roll,
+ * The talking-piano widget: pick a movie line, see it as a piano roll,
  * hear it on the piano, then turn on the subtitles and hear it again.
  * Mounted from `astro:page-load` and torn down on `astro:before-swap`, because ClientRouter keeps
  * this module alive across navigations.
  */
-import { GRAM_FPS, KEYS, RATE, decodeGram, keygram, score, type Chord, type Keygram } from './analysis.ts';
+import { GRAM_FPS, KEYS, decodeGram, score, type Chord, type Keygram } from './analysis.ts';
 import { CLIPS, type Clip } from './clips.ts';
 import grams from './grams.json';
 import { render } from './synth.ts';
 
-const MAX_RECORD_S = 6;
 const KEYBOARD_W = 16;
 /** Black keys within an octave starting at A (A0 is key 0) */
 const BLACK = new Set([1, 4, 6, 9, 11]);
@@ -19,9 +18,7 @@ type Locale = 'ko' | 'en';
 interface Source {
 	id: string;
 	gram: Keygram;
-	clip?: Clip;
-	/** The recording itself, for the "my voice" source only */
-	voice?: AudioBuffer;
+	clip: Clip;
 }
 
 class TalkingPiano {
@@ -32,11 +29,8 @@ class TalkingPiano {
 	private readonly heat = document.createElement('canvas');
 	private readonly resize: ResizeObserver;
 	private readonly locale: Locale;
-	private readonly msg: DOMStringMap;
 	private readonly el: {
 		play: HTMLButtonElement;
-		voice: HTMLButtonElement;
-		record: HTMLButtonElement;
 		subs: HTMLButtonElement;
 		line: HTMLElement;
 		gloss: HTMLElement;
@@ -49,26 +43,22 @@ class TalkingPiano {
 	};
 
 	private audio: AudioContext | null = null;
-	private playing: { node: AudioBufferSourceNode; startAt: number; piano: boolean } | null = null;
+	private playing: { node: AudioBufferSourceNode; startAt: number } | null = null;
 	private rendered: { key: string; buffer: AudioBuffer } | null = null;
-	private recorder: { rec: MediaRecorder; stream: MediaStream; timer: number; started: number } | null = null;
 	private raf = 0;
 	private src: Source;
 	private chords: Chord[] = [];
-	private fps = 16;
-	private voices = 24;
+	private fps = 40;
+	private voices = 40;
 	private accent = '#4fd1a5';
 
 	constructor(private readonly root: HTMLElement) {
 		this.locale = root.dataset.locale === 'en' ? 'en' : 'ko';
-		this.msg = root.dataset;
 		this.canvas = root.querySelector('canvas')!;
 		this.ctx2d = this.canvas.getContext('2d')!;
 		const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
 		this.el = {
 			play: q('[data-play]'),
-			voice: q('[data-voice]'),
-			record: q('[data-record]'),
 			subs: q('[data-subs]'),
 			line: q('[data-line]'),
 			gloss: q('[data-gloss]'),
@@ -95,9 +85,7 @@ class TalkingPiano {
 				{ signal },
 			);
 		}
-		this.el.play.addEventListener('click', () => this.togglePlay(true), { signal });
-		this.el.voice.addEventListener('click', () => this.togglePlay(false), { signal });
-		this.el.record.addEventListener('click', () => this.toggleRecord(), { signal });
+		this.el.play.addEventListener('click', () => this.togglePlay(), { signal });
 		this.el.subs.addEventListener(
 			'click',
 			() => {
@@ -127,7 +115,6 @@ class TalkingPiano {
 		this.abort.abort();
 		this.resize.disconnect();
 		this.stop();
-		this.stopRecording(false);
 		this.audio?.close();
 		this.audio = null;
 	}
@@ -144,27 +131,19 @@ class TalkingPiano {
 		for (const b of this.root.querySelectorAll<HTMLButtonElement>('[data-clip]')) {
 			b.setAttribute('aria-pressed', String(b.dataset.clip === src.id));
 		}
-		this.el.record.setAttribute('aria-pressed', String(src.id === 'mic'));
-		this.el.voice.hidden = !src.voice;
 
 		// Subtitles: one span per word, lit as the piano reaches it
 		this.el.line.replaceChildren();
-		const words = src.clip?.words ?? [[0, this.msg.micLine ?? ''] as [number, string]];
-		for (const [time, text] of words) {
+		for (const [time, text] of src.clip.words) {
 			const span = document.createElement('span');
 			span.textContent = text;
 			span.dataset.time = String(time);
 			this.el.line.append(span, ' ');
 		}
-		this.el.gloss.textContent = src.clip?.gloss[this.locale] ?? '';
+		this.el.gloss.textContent = src.clip.gloss[this.locale] ?? '';
 		this.el.gloss.hidden = !this.el.gloss.textContent;
-		if (src.clip) {
-			this.el.source.href = src.clip.source;
-			this.el.source.hidden = false;
-		} else {
-			this.el.source.hidden = true;
-		}
-		this.status(src.clip ? (src.clip.who[this.locale] ?? '') : (this.msg.micReady ?? ''));
+		this.el.source.href = src.clip.source;
+		this.status(src.clip.who[this.locale]);
 		this.rescore();
 	}
 
@@ -194,13 +173,12 @@ class TalkingPiano {
 		return this.rendered.buffer;
 	}
 
-	private togglePlay(piano: boolean) {
+	private togglePlay() {
 		const was = this.playing;
 		this.stop();
-		if (was && was.piano === piano) return;
+		if (was) return;
 		const audio = this.ensureAudio();
-		const buffer = piano ? this.pianoBuffer(audio) : this.src.voice;
-		if (!buffer) return;
+		const buffer = this.pianoBuffer(audio);
 		const node = audio.createBufferSource();
 		node.buffer = buffer;
 		node.connect(audio.destination);
@@ -209,8 +187,8 @@ class TalkingPiano {
 		node.onended = () => {
 			if (this.playing?.node === node) this.stop();
 		};
-		this.playing = { node, startAt, piano };
-		(piano ? this.el.play : this.el.voice).setAttribute('aria-pressed', 'true');
+		this.playing = { node, startAt };
+		this.el.play.setAttribute('aria-pressed', 'true');
 		const tick = () => {
 			if (!this.playing || !this.audio) return;
 			// outputLatency is what the speaker is behind the clock; not every browser reports it
@@ -233,69 +211,7 @@ class TalkingPiano {
 		}
 		cancelAnimationFrame(this.raf);
 		this.el?.play.setAttribute('aria-pressed', 'false');
-		this.el?.voice.setAttribute('aria-pressed', 'false');
 		if (this.chords) this.draw(-1);
-	}
-
-	/* ------------------------------------------------------------ microphone */
-
-	private async toggleRecord() {
-		if (this.recorder) return this.stopRecording(true);
-		this.stop();
-		const audio = this.ensureAudio();
-		let stream: MediaStream;
-		try {
-			stream = await navigator.mediaDevices.getUserMedia({
-				audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-			});
-		} catch {
-			this.status(this.msg.micFail ?? '');
-			return;
-		}
-		const rec = new MediaRecorder(stream);
-		const chunks: Blob[] = [];
-		rec.ondataavailable = (e) => chunks.push(e.data);
-		rec.onstop = async () => {
-			stream.getTracks().forEach((t) => t.stop());
-			if (!this.root.isConnected || !chunks.length) return;
-			try {
-				const decoded = await audio.decodeAudioData(await new Blob(chunks, { type: rec.mimeType }).arrayBuffer());
-				const voice = trimSilence(decoded, audio);
-				const mono = await resample(voice, RATE);
-				this.select({ id: 'mic', gram: keygram(mono), voice });
-				this.togglePlay(true);
-			} catch {
-				this.status(this.msg.micFail ?? '');
-			}
-		};
-		rec.start();
-		const started = performance.now();
-		const timer = window.setInterval(() => {
-			const s = (performance.now() - started) / 1000;
-			this.status((this.msg.micRecording ?? '').replace('{s}', s.toFixed(1)));
-			if (s >= MAX_RECORD_S) this.stopRecording(true);
-		}, 100);
-		this.recorder = { rec, stream, timer, started };
-		this.el.record.classList.add('recording');
-		this.el.record.setAttribute('aria-pressed', 'true');
-		this.status((this.msg.micRecording ?? '').replace('{s}', '0.0'));
-	}
-
-	private stopRecording(keep: boolean) {
-		const r = this.recorder;
-		if (!r) return;
-		this.recorder = null;
-		clearInterval(r.timer);
-		this.el.record.classList.remove('recording');
-		if (keep && r.rec.state !== 'inactive') {
-			this.status(this.msg.micWorking ?? '');
-			r.rec.stop();
-		} else {
-			r.rec.ondataavailable = null;
-			r.rec.onstop = null;
-			if (r.rec.state !== 'inactive') r.rec.stop();
-			r.stream.getTracks().forEach((t) => t.stop());
-		}
 	}
 
 	/* ------------------------------------------------------------ drawing */
@@ -382,7 +298,6 @@ class TalkingPiano {
 		const kw = KEYBOARD_W * dpr;
 		const rollW = W - kw;
 		const rowH = H / KEYS;
-		const piano = this.playing?.piano ?? true;
 
 		if (t >= 0) {
 			const x = kw + Math.min(1, t / this.duration) * rollW;
@@ -392,16 +307,14 @@ class TalkingPiano {
 			g.fillRect(x - dpr / 2, 0, dpr, H);
 
 			// Keys being struck light up on the keyboard
-			if (piano) {
-				const chord = this.chords[Math.floor(t * this.fps)];
-				if (chord) {
-					g.fillStyle = this.accent;
-					for (const n of chord.notes) {
-						g.globalAlpha = 0.4 + 0.6 * n.vel;
-						g.fillRect(0, H - (n.key + 1) * rowH, kw - 2 * dpr, rowH);
-					}
-					g.globalAlpha = 1;
+			const chord = this.chords[Math.floor(t * this.fps)];
+			if (chord) {
+				g.fillStyle = this.accent;
+				for (const n of chord.notes) {
+					g.globalAlpha = 0.4 + 0.6 * n.vel;
+					g.fillRect(0, H - (n.key + 1) * rowH, kw - 2 * dpr, rowH);
 				}
+				g.globalAlpha = 1;
 			}
 		}
 
@@ -413,40 +326,6 @@ class TalkingPiano {
 	private status(text: string) {
 		this.el.status.textContent = text;
 	}
-}
-
-/* ---------------------------------------------------------------- audio helpers */
-
-/** Cut leading and trailing quiet so the roll isn't mostly empty */
-function trimSilence(buf: AudioBuffer, audio: AudioContext) {
-	const x = buf.getChannelData(0);
-	const hop = Math.round(buf.sampleRate * 0.02);
-	const rms: number[] = [];
-	for (let i = 0; i < x.length; i += hop) {
-		let s = 0;
-		const end = Math.min(x.length, i + hop);
-		for (let j = i; j < end; j++) s += x[j] * x[j];
-		rms.push(Math.sqrt(s / Math.max(1, end - i)));
-	}
-	const peak = Math.max(...rms, 1e-9);
-	const loud = (v: number) => v > peak * 0.03; // about -30 dB
-	let a = rms.findIndex(loud);
-	let b = rms.length - 1 - [...rms].reverse().findIndex(loud);
-	if (a < 0) return buf;
-	a = Math.max(0, a - 5) * hop;
-	b = Math.min(x.length, (b + 6) * hop);
-	const out = audio.createBuffer(1, b - a, buf.sampleRate);
-	out.copyToChannel(x.slice(a, b), 0);
-	return out;
-}
-
-async function resample(buf: AudioBuffer, rate: number) {
-	const off = new OfflineAudioContext(1, Math.ceil(buf.duration * rate), rate);
-	const node = off.createBufferSource();
-	node.buffer = buf;
-	node.connect(off.destination);
-	node.start();
-	return (await off.startRendering()).getChannelData(0);
 }
 
 /* ---------------------------------------------------------------- mount */

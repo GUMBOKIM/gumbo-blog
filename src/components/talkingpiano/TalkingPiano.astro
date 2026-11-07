@@ -1,6 +1,6 @@
 ---
 /**
- * Talking piano: famous movie lines (shipped as keygrams only) and the reader's own voice,
+ * Talking piano: famous movie lines (shipped as keygrams only),
  * played back as piano chords with a piano roll and optional subtitles.
  */
 import type { Locale } from '../../i18n';
@@ -15,34 +15,20 @@ const { locale } = Astro.props;
 const strings = {
 	ko: {
 		play: '피아노로 듣기',
-		voice: '원래 목소리',
-		record: '내 목소리',
 		subs: '자막',
 		subsHidden: '자막이 꺼져 있습니다',
 		fps: '초당 타건',
 		voices: '건반 수',
 		source: '출처',
-		micLine: '방금 한 말',
-		micReady: '녹음한 목소리',
-		micRecording: '녹음 중 {s}초 · 다시 누르면 멈춥니다',
-		micWorking: '분석 중…',
-		micFail: '마이크를 열 수 없습니다',
 		label: '피아노 롤',
 	},
 	en: {
 		play: 'Play on piano',
-		voice: 'Original voice',
-		record: 'My voice',
 		subs: 'Subtitles',
 		subsHidden: 'Subtitles are off',
 		fps: 'Chords/s',
 		voices: 'Keys',
 		source: 'Source',
-		micLine: 'What you just said',
-		micReady: 'Your recording',
-		micRecording: 'Recording {s}s · press again to stop',
-		micWorking: 'Analysing…',
-		micFail: 'Could not open the microphone',
 		label: 'Piano roll',
 	},
 }[locale];
@@ -52,11 +38,6 @@ const strings = {
 	class="talking-piano"
 	data-talking-piano
 	data-locale={locale}
-	data-mic-line={strings.micLine}
-	data-mic-ready={strings.micReady}
-	data-mic-recording={strings.micRecording}
-	data-mic-working={strings.micWorking}
-	data-mic-fail={strings.micFail}
 >
 	<div class="bar clips" role="group">
 		{
@@ -66,9 +47,6 @@ const strings = {
 				</button>
 			))
 		}
-		<button type="button" class="record" data-record aria-pressed="false">
-			<span class="dot" aria-hidden="true"></span>{strings.record}
-		</button>
 	</div>
 
 	<canvas aria-label={strings.label}></canvas>
@@ -83,7 +61,6 @@ const strings = {
 		<button type="button" class="play" data-play aria-pressed="false">
 			<span class="icon" aria-hidden="true"></span>{strings.play}
 		</button>
-		<button type="button" data-voice aria-pressed="false" hidden>{strings.voice}</button>
 		<button type="button" data-subs aria-pressed="false">{strings.subs}</button>
 		<a class="source" data-source target="_blank" rel="noopener">{strings.source}</a>
 	</div>
@@ -91,13 +68,13 @@ const strings = {
 	<div class="bar sliders">
 		<label>
 			<span>{strings.fps}</span>
-			<input type="range" min="4" max="40" step="1" value="16" data-fps />
-			<output data-fps-out>16</output>
+			<input type="range" min="4" max="40" step="1" value="40" data-fps />
+			<output data-fps-out>40</output>
 		</label>
 		<label>
 			<span>{strings.voices}</span>
-			<input type="range" min="1" max="40" step="1" value="24" data-voices />
-			<output data-voices-out>24</output>
+			<input type="range" min="1" max="40" step="1" value="40" data-voices />
+			<output data-voices-out>40</output>
 		</label>
 	</div>
 
@@ -107,7 +84,7 @@ const strings = {
 <script>
 	import { mountAll, unmountAll } from './widget';
 	// ClientRouter swaps page content without reloading this module, so (re)mount on every
-	// page load and release the microphone and audio before the page goes away.
+	// page load and release the audio before the page goes away.
 	document.addEventListener('astro:page-load', mountAll);
 	document.addEventListener('astro:before-swap', unmountAll);
 </script>
@@ -158,26 +135,6 @@ const strings = {
 	button[aria-pressed='true'] {
 		border-color: var(--accent);
 		color: var(--accent);
-	}
-
-	.record .dot {
-		display: inline-block;
-		width: 0.6em;
-		height: 0.6em;
-		margin-right: 0.45em;
-		border-radius: 50%;
-		background: oklch(65% 0.2 25);
-		vertical-align: 0.05em;
-	}
-
-	.record.recording .dot {
-		animation: blink 0.8s steps(2, jump-none) infinite;
-	}
-
-	@keyframes blink {
-		to {
-			opacity: 0.2;
-		}
 	}
 
 	/* Play / stop glyph drawn in CSS so the label width never changes */

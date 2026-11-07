@@ -1,13 +1,25 @@
 ---
 title: "A talking piano: Zoro's 'Nothing happened' played on 88 keys"
-description: Peter Ablinger's speaking piano, rebuilt in the browser. Splitting a voice into 88 piano keys, pulling the voice out of movie scenes, and turning your own voice into piano
+description: Peter Ablinger's speaking piano, rebuilt in the browser. Splitting a voice into 88 piano keys and pulling the voice out of movie scenes
 category: useless
 date: 2026-11-07
 ---
 
 import TalkingPiano from '../../../components/talkingpiano/TalkingPiano.astro';
 
-The second entry in the [series where I build useless things](/en/posts/useless-ui/). This time the piano talks.
+The second entry in the [series where I build useless things](/en/posts/useless-ui/). This time the piano talks. I rebuilt the Austrian composer Peter Ablinger's "speaking piano" in the browser and fed it a few famous movie and anime lines.
+
+## The speaking piano
+
+A speaking piano replays a recording of someone talking on a piano. The recording is cut into slices, around 16 a second, and for each slice you work out which pitches sounded and how loud, then strike the matching piano keys that hard. No human can play that fast, so a machine does it.
+
+Heard on its own it's contemporary music, chords pouring out. Put the sentence on a screen and the same sound suddenly turns into speech. Your brain starts finding vowels and intonation in the piano, and once you hear it you can't unhear it. Ablinger put it this way in an interview: "with a little practice, or help or subtitling, we actually can hear a human voice in a piano sound."
+
+Ablinger started a series called *Quadraturen* in the late 1990s. A recording is cut into a grid of time and frequency, and each cell is played back on an instrument so the original sound reappears. He calls it "phonorealism", after photorealism in painting.
+
+The best-known piece is *Deus Cantando* (2009). A Berlin schoolboy reads the declaration of an international environmental criminal court, and the recording is moved onto a piano. A machine built by Winfried Ritsch sits on top of the keyboard and plays it with 88 electromagnetic fingers, while the text is projected on a screen. The grid runs at about 16 cells per second, roughly as fast as a player piano can repeat a key.
+
+A browser piano has no such limit, so the widget defaults to 40 chords a second with up to 40 keys each.
 
 ## Try it
 
@@ -15,25 +27,14 @@ The second entry in the [series where I build useless things](/en/posts/useless-
 
 - Listen **with subtitles off** first. It sounds like a piano throwing chords around.
 - Then turn **Subtitles** on and listen again. Same sound, but now it starts to sound like words. That moment is the whole point of this post.
-- **Chords/s** is how many chords the piano plays per second, **Keys** is how many keys it may press at once. Lower them and you can hear where speech falls apart.
-- Press **My voice**, say something, press it again (6 seconds at most) and the piano plays it back. The recording is processed in your browser and goes nowhere. **Original voice** plays what you recorded, for comparison.
-
-## Peter Ablinger's speaking piano
-
-The Austrian composer Peter Ablinger started a series called *Quadraturen* in the late 1990s. A recording is cut into a fine grid of time and frequency, and each cell is played back on an instrument so the original sound reappears. He calls it "phonorealism", after photorealism in painting.
-
-The best-known piece is *Deus Cantando* (2009). A Berlin schoolboy reads the declaration of an international environmental criminal court, and the recording is moved onto a piano. No human can play that fast, so a machine built by Winfried Ritsch sits on top of the keyboard and plays it with 88 electromagnetic fingers. In performance the text is projected on a screen.
-
-Ablinger's grid runs at about 16 cells per second, which is roughly as fast as a player piano can repeat a key. That's why **Chords/s** starts at 16 here.
-
-The subtitles are the trick. Without them it's contemporary music. Once you see the sentence, your brain starts finding vowels and intonation in the piano, and after that you can't unhear it. In an interview Ablinger put it as: "with a little practice, or help or subtitling, we actually can hear a human voice in a piano sound."
+- **Chords/s** is how many chords the piano plays per second, **Keys** is how many keys it may press at once. Lower them and you can hear where speech falls apart. At 16 chords a second you're at the limit of Ablinger's mechanical piano.
 
 ## How it works
 
 Plain TypeScript, no libraries. The code is in the [repository](https://github.com/GUMBOKIM/gumbo-blog/tree/main/src/components/talkingpiano). There are two stages:
 
 1. Turn the voice into a **keygram**: 50 times a second, how much energy lands on each of the 88 piano keys. Think of a spectrogram whose vertical axis is piano keys instead of hertz.
-2. Turn the keygram into a **score**: chords the piano can actually play, 16 a second and up to 24 keys each.
+2. Turn the keygram into a **score**: chords that fit the chords-per-second and keys-per-chord set by the sliders.
 
 In the widget, the faint gray layer underneath is the keygram and the green bars on top are the notes the piano plays.
 
@@ -55,9 +56,9 @@ Low keys get precise pitch, high keys get precise timing. Our ears behave in a s
 
 ### Cutting it into chords
 
-The keygram has 50 rows a second and the piano plays 16 chords a second, so each chord covers three or four rows. Within that slot each key takes its loudest value, and only the keys louder than both neighbours, the peaks of the spectrum, survive. The loudest 24 of those get played.
+The keygram has 50 rows a second and the piano plays less often than that, so each chord covers a few rows. Within that slot each key takes its loudest value, and only the keys louder than both neighbours, the peaks of the spectrum, survive. The loudest of those get played, up to the key limit.
 
-Keeping only peaks matters. A vowel is the voice's fundamental and its harmonics with a few resonance peaks, the **formants**, on top. "Ah" and "ee" differ mostly in where those peaks sit. Play the peaks and the chords trace that shape, and the ear reads the shape as a vowel. Pick the 24 loudest keys without that rule and you get clumps around each peak, which just sounds like mush.
+Keeping only peaks matters. A vowel is the voice's fundamental and its harmonics with a few resonance peaks, the **formants**, on top. "Ah" and "ee" differ mostly in where those peaks sit. Play the peaks and the chords trace that shape, and the ear reads the shape as a vowel. Pick the loudest keys without that rule and you get clumps around each peak, which just sounds like mush.
 
 My first version stopped there, and Zoro's line was wrong. The scene needs more than a second of silence between 何も and なかった, but the piano kept tinkling through it. Breathing and leftover background noise became the loudest peaks in an otherwise quiet slot. So I added rests: if a slot's total energy is more than 22 dB below the loudest slot in the clip, the piano plays nothing.
 
@@ -74,7 +75,7 @@ The gaps between sounds turned out to matter as much as the sounds. With rests i
 
 No samples; the piano is synthesized. A note is eight sine partials. Real piano strings are stiff, so their partials run slightly sharp of whole multiples, which is approximated with `n·f·√(1 + B·n²)`. Harder hits boost the upper partials for a brighter tone, lower keys ring longer, and the damper drops when the next chord arrives. The hammer's thump is 6 ms of noise.
 
-A three-second line comes to nearly a thousand notes. Scheduling that many Web Audio oscillators chokes the browser, so the whole thing is drawn into a `Float32Array` and played as a single buffer. Rotating a complex number instead of calling `sin()` per sample gets a three-second clip rendered in about 60 ms.
+A three-second line comes to thousands of notes. Scheduling that many Web Audio oscillators chokes the browser, so the whole thing is drawn into a `Float32Array` and played as a single buffer. Rotating a complex number instead of calling `sin()` per sample makes the render near instant.
 
 ### Getting the lines
 
@@ -84,19 +85,18 @@ The lines come from YouTube clips:
 2. Whisper transcribes it so I can find where each line sits. It also gives word timings, which drive the subtitles lighting up word by word in the widget.
 3. Movie scenes have music and effects under the dialogue. Moved onto the piano as is, the music gets played too and buries the words. So Demucs, a source separation model, pulls out the voice.
 
-The blog **doesn't host the original audio**. What ships is the keygram: 56 KB for all five clips. It's a table of loudness per key every 20 ms with no phase, so the recording can't be rebuilt from it, and it lets the browser re-score the chords whenever you move a slider. Each clip's **Source** link goes to the original.
+The blog **doesn't host the original audio**. What ships is the keygram: 48 KB for all four clips. It's a table of loudness per key every 20 ms with no phase, so the recording can't be rebuilt from it, and it lets the browser re-score the chords whenever you move a slider. Each clip's **Source** link goes to the original.
 
 ### Playing it to Whisper
 
-Afterwards I wondered whether a machine could understand the piano, so I fed the piano versions to Whisper:
+Afterwards I wondered whether a machine could understand the piano, so I fed the piano versions to Whisper. Here's what it heard in Zoro's "何も…なかった":
 
-- T-800's "I'll be back." → `Thanks for watching!`
-- Zoro's "何も…なかった" → `最後まで視聴してくださって本当にありがとうございます。` ("Thank you so much for watching to the end.")
+> 最後まで視聴してくださって本当にありがとうございます。("Thank you so much for watching to the end.")
 
 When Whisper can't make sense of audio it makes up a YouTube outro, because that's what its training data looks like. It's stuck where a listener without subtitles is, except the listener gets the subtitles and starts hearing words, and Whisper just keeps saying goodbye.
 
 ## Wrapping up
 
-Two takeaways. First, speech survives on surprisingly little: 16 chords a second, 24 keys each, as long as the brain already knows what's being said. Second, like the flip-dot board, the constraints did the work. Peaks instead of everything, rests instead of constant notes, and the words came through.
+Two takeaways. First, speech survives on surprisingly little: a few dozen piano keys will do, as long as the brain already knows what's being said. Second, like the flip-dot board, the constraints did the work. Peaks instead of everything, rests instead of constant notes, and the words came through.
 
 More useless things to come.

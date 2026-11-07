@@ -63,16 +63,4 @@ export const CLIPS: Clip[] = [
 		source: 'https://www.youtube.com/watch?v=OKr3Ay1tPHo&t=19',
 		trim: [19.35, 21.45],
 	},
-	{
-		id: 'terminator',
-		who: { ko: 'T-800 · 터미네이터', en: 'T-800 · The Terminator' },
-		words: [
-			[0.25, "I'll"],
-			[0.55, 'be'],
-			[0.75, 'back.'],
-		],
-		gloss: { ko: '다시 오겠다.' },
-		source: 'https://www.youtube.com/watch?v=SZdVWKM1ILs&t=2',
-		trim: [2.45, 3.85],
-	},
 ];
