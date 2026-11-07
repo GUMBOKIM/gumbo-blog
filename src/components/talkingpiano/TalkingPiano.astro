@@ -3,8 +3,15 @@
  * Talking piano: famous movie lines (shipped as keygrams only),
  * played back as piano chords with a piano roll and optional subtitles.
  */
+import { Image } from 'astro:assets';
 import type { Locale } from '../../i18n';
 import { CLIPS } from './clips';
+import insiders from './assets/insiders.jpg';
+import tazza from './assets/tazza.jpg';
+import veteran from './assets/veteran.jpg';
+import zoro from './assets/zoro.jpg';
+
+const scenes: Record<string, ImageMetadata> = { zoro, tazza, veteran, insiders };
 
 interface Props {
 	locale: Locale;
@@ -49,13 +56,28 @@ const strings = {
 		}
 	</div>
 
-	<canvas aria-label={strings.label}></canvas>
-
-	<div class="subs">
-		<p class="line" data-line></p>
-		<p class="gloss" data-gloss></p>
+	<div class="screen">
+		{
+			CLIPS.map((clip, i) => (
+				<Image
+					src={scenes[clip.id]}
+					alt={clip.who[locale]}
+					widths={[600, 1200]}
+					sizes="(max-width: 800px) 100vw, 768px"
+					data-scene={clip.id}
+					hidden={i !== 0}
+					loading="lazy"
+				/>
+			))
+		}
+		<div class="subs">
+			<p class="line" data-line></p>
+			<p class="gloss" data-gloss></p>
+		</div>
 		<p class="hidden-note">{strings.subsHidden}</p>
 	</div>
+
+	<canvas aria-label={strings.label}></canvas>
 
 	<div class="bar">
 		<button type="button" class="play" data-play aria-pressed="false">
@@ -162,15 +184,35 @@ const strings = {
 		font-size: 0.78rem;
 	}
 
-	/* Fixed height so toggling subtitles or switching clips doesn't move the controls */
-	.subs {
+	/* The scene, with subtitles over its lower edge like a film */
+	.screen {
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		min-height: 4.6em;
-		margin: 0.6em 0 0;
+		aspect-ratio: 2 / 1;
+		margin-bottom: 0.5em;
+		overflow: hidden;
+		background: #0c0c0c;
+		border-radius: 6px;
+	}
+
+	/* Opt out of the post's photo rules (480px column, top margin, rounded corners) */
+	.screen img {
+		display: block;
+		width: 100%;
+		max-width: none;
+		height: 100%;
+		margin: 0;
+		border-radius: 0;
+		object-fit: cover;
+		object-position: center 30%;
+	}
+
+	.subs {
+		position: absolute;
+		inset: auto 0 0 0;
+		padding: 2.5em 1em 0.9em;
+		background: linear-gradient(transparent, rgb(0 0 0 / 0.75));
 		text-align: center;
+		pointer-events: none;
 	}
 
 	.subs p {
@@ -178,11 +220,12 @@ const strings = {
 	}
 
 	.line {
-		color: var(--headings);
+		color: #fff;
 		font-family: var(--font-sans);
-		font-size: 1.35rem;
+		font-size: clamp(1.1rem, 3.5vw, 1.6rem);
 		font-weight: 700;
 		line-height: 1.4;
+		text-shadow: 0 1px 4px rgb(0 0 0 / 0.8);
 	}
 
 	.line :global(span) {
@@ -190,28 +233,30 @@ const strings = {
 	}
 
 	.line :global(span.ahead) {
-		opacity: 0.2;
+		opacity: 0.25;
 	}
 
 	.gloss {
-		margin-top: 0.2em !important;
-		color: var(--text-secondary);
+		margin-top: 0.15em !important;
+		color: rgb(255 255 255 / 0.8);
 		font-family: var(--font-sans);
 		font-size: 0.85rem;
+		text-shadow: 0 1px 3px rgb(0 0 0 / 0.8);
 	}
 
 	.hidden-note {
 		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--text-secondary);
-		font-size: 0.78rem;
+		right: 0.6em;
+		bottom: 0.5em;
+		margin: 0;
+		padding: 0.15em 0.5em;
+		border-radius: 3px;
+		background: rgb(0 0 0 / 0.55);
+		color: rgb(255 255 255 / 0.7);
+		font-size: 0.72rem;
 	}
 
-	.talking-piano:not(.subs-on) .line,
-	.talking-piano:not(.subs-on) .gloss {
+	.talking-piano:not(.subs-on) .subs {
 		visibility: hidden;
 	}
 
@@ -254,6 +299,7 @@ const strings = {
 	}
 
 	@media (max-width: 600px) {
+		.screen,
 		canvas {
 			width: calc(100% + var(--gutter) * 2);
 			margin-left: calc(var(--gutter) * -1);

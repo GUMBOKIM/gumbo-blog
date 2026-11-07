@@ -131,6 +131,9 @@ class TalkingPiano {
 		for (const b of this.root.querySelectorAll<HTMLButtonElement>('[data-clip]')) {
 			b.setAttribute('aria-pressed', String(b.dataset.clip === src.id));
 		}
+		for (const img of this.root.querySelectorAll<HTMLImageElement>('[data-scene]')) {
+			img.hidden = img.dataset.scene !== src.id;
+		}
 
 		// Subtitles: one span per word, lit as the piano reaches it
 		this.el.line.replaceChildren();
