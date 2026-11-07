@@ -1,0 +1,309 @@
+---
+/**
+ * Talking piano: famous movie lines (shipped as keygrams only),
+ * played back as piano chords with a piano roll and optional subtitles.
+ */
+import { Image } from 'astro:assets';
+import type { Locale } from '../../i18n';
+import { CLIPS } from './clips';
+import insiders from './assets/insiders.jpg';
+import tazza from './assets/tazza.jpg';
+import veteran from './assets/veteran.jpg';
+import zoro from './assets/zoro.jpg';
+
+const scenes: Record<string, ImageMetadata> = { zoro, tazza, veteran, insiders };
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const strings = {
+	ko: {
+		play: '피아노로 듣기',
+		subs: '자막',
+		subsHidden: '자막이 꺼져 있습니다',
+		fps: '초당 타건',
+		voices: '건반 수',
+		source: '출처',
+		label: '피아노 롤',
+	},
+	en: {
+		play: 'Play on piano',
+		subs: 'Subtitles',
+		subsHidden: 'Subtitles are off',
+		fps: 'Chords/s',
+		voices: 'Keys',
+		source: 'Source',
+		label: 'Piano roll',
+	},
+}[locale];
+---
+
+<div
+	class="talking-piano"
+	data-talking-piano
+	data-locale={locale}
+>
+	<div class="bar clips" role="group">
+		{
+			CLIPS.map((clip, i) => (
+				<button type="button" data-clip={clip.id} aria-pressed={i === 0 ? 'true' : 'false'}>
+					{clip.who[locale].split(' · ')[0]}
+				</button>
+			))
+		}
+	</div>
+
+	<div class="screen">
+		{
+			CLIPS.map((clip, i) => (
+				<Image
+					src={scenes[clip.id]}
+					alt={clip.who[locale]}
+					widths={[600, 1200]}
+					sizes="(max-width: 800px) 100vw, 768px"
+					data-scene={clip.id}
+					hidden={i !== 0}
+					loading="lazy"
+				/>
+			))
+		}
+		<div class="subs">
+			<p class="line" data-line></p>
+			<p class="gloss" data-gloss></p>
+		</div>
+		<p class="hidden-note">{strings.subsHidden}</p>
+	</div>
+
+	<canvas aria-label={strings.label}></canvas>
+
+	<div class="bar">
+		<button type="button" class="play" data-play aria-pressed="false">
+			<span class="icon" aria-hidden="true"></span>{strings.play}
+		</button>
+		<button type="button" data-subs aria-pressed="false">{strings.subs}</button>
+		<a class="source" data-source target="_blank" rel="noopener">{strings.source}</a>
+	</div>
+
+	<div class="bar sliders">
+		<label>
+			<span>{strings.fps}</span>
+			<input type="range" min="4" max="40" step="1" value="40" data-fps />
+			<output data-fps-out>40</output>
+		</label>
+		<label>
+			<span>{strings.voices}</span>
+			<input type="range" min="1" max="40" step="1" value="40" data-voices />
+			<output data-voices-out>40</output>
+		</label>
+	</div>
+
+	<p class="status" data-status></p>
+</div>
+
+<script>
+	import { mountAll, unmountAll } from './widget';
+	// ClientRouter swaps page content without reloading this module, so (re)mount on every
+	// page load and release the audio before the page goes away.
+	document.addEventListener('astro:page-load', mountAll);
+	document.addEventListener('astro:before-swap', unmountAll);
+</script>
+
+<style>
+	.talking-piano {
+		margin: 2em 0;
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		height: 240px;
+		background: #0c0c0c;
+		border-radius: 6px;
+	}
+
+	.bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4em 0.5em;
+		margin: 0.6em 0;
+	}
+
+	[hidden] {
+		display: none !important;
+	}
+
+	button {
+		padding: 0.35em 0.8em;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-secondary);
+		color: var(--text);
+		font: inherit;
+		line-height: 1.4;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	button:hover {
+		border-color: var(--text-secondary);
+	}
+
+	button[aria-pressed='true'] {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	/* Play / stop glyph drawn in CSS so the label width never changes */
+	.play .icon {
+		display: inline-block;
+		width: 0;
+		height: 0;
+		margin-right: 0.5em;
+		border-style: solid;
+		border-width: 0.32em 0 0.32em 0.55em;
+		border-color: transparent transparent transparent currentColor;
+		vertical-align: 0.02em;
+	}
+
+	.play[aria-pressed='true'] .icon {
+		width: 0.6em;
+		height: 0.6em;
+		border: 0;
+		background: currentColor;
+	}
+
+	.source {
+		margin-left: auto;
+		color: var(--text-secondary);
+		font-size: 0.78rem;
+	}
+
+	/* The scene, with subtitles over its lower edge like a film */
+	.screen {
+		position: relative;
+		aspect-ratio: 2 / 1;
+		margin-bottom: 0.5em;
+		overflow: hidden;
+		background: #0c0c0c;
+		border-radius: 6px;
+	}
+
+	/* Opt out of the post's photo rules (480px column, top margin, rounded corners) */
+	.screen img {
+		display: block;
+		width: 100%;
+		max-width: none;
+		height: 100%;
+		margin: 0;
+		border-radius: 0;
+		object-fit: cover;
+		object-position: center 30%;
+	}
+
+	.subs {
+		position: absolute;
+		inset: auto 0 0 0;
+		padding: 2.5em 1em 0.9em;
+		background: linear-gradient(transparent, rgb(0 0 0 / 0.75));
+		text-align: center;
+		pointer-events: none;
+	}
+
+	.subs p {
+		margin: 0;
+	}
+
+	.line {
+		color: #fff;
+		font-family: var(--font-sans);
+		font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+		font-weight: 700;
+		line-height: 1.4;
+		text-shadow: 0 1px 4px rgb(0 0 0 / 0.8);
+	}
+
+	.line :global(span) {
+		transition: opacity 0.08s;
+	}
+
+	.line :global(span.ahead) {
+		opacity: 0.25;
+	}
+
+	.gloss {
+		margin-top: 0.15em !important;
+		color: rgb(255 255 255 / 0.8);
+		font-family: var(--font-sans);
+		font-size: 0.85rem;
+		text-shadow: 0 1px 3px rgb(0 0 0 / 0.8);
+	}
+
+	.hidden-note {
+		position: absolute;
+		right: 0.6em;
+		bottom: 0.5em;
+		margin: 0;
+		padding: 0.15em 0.5em;
+		border-radius: 3px;
+		background: rgb(0 0 0 / 0.55);
+		color: rgb(255 255 255 / 0.7);
+		font-size: 0.72rem;
+	}
+
+	.talking-piano:not(.subs-on) .subs {
+		visibility: hidden;
+	}
+
+	.talking-piano.subs-on .hidden-note {
+		display: none;
+	}
+
+	.sliders label {
+		display: flex;
+		flex: 1 1 14em;
+		align-items: center;
+		gap: 0.6em;
+		color: var(--text-secondary);
+	}
+
+	.sliders span {
+		flex: none;
+		min-width: 5.5em;
+	}
+
+	.sliders input {
+		flex: 1;
+		min-width: 0;
+		accent-color: var(--accent);
+	}
+
+	.sliders output {
+		flex: none;
+		width: 2ch;
+		color: var(--text);
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.status {
+		min-height: 1.6em;
+		margin: 0.2em 0 0;
+		color: var(--text-secondary);
+		font-size: 0.78rem;
+	}
+
+	@media (max-width: 600px) {
+		.screen,
+		canvas {
+			width: calc(100% + var(--gutter) * 2);
+			margin-left: calc(var(--gutter) * -1);
+			border-radius: 0;
+		}
+	}
+</style>
