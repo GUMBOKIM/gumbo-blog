@@ -21,12 +21,22 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      indexnow: ${{ steps.indexnow.outputs.urls }}
     steps:
       - uses: actions/checkout@v4
       - uses: withastro/action@v4
         env:
           # Set the PUBLIC_GA_ID repository variable to switch Google Analytics on
           PUBLIC_GA_ID: ${{ vars.PUBLIC_GA_ID }}
+      # Compare the new sitemap with the one still live, before the deploy replaces it
+      - id: indexnow
+        run: |
+          {
+            echo 'urls<<EOF'
+            node scripts/indexnow.mjs diff || true
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: build
@@ -37,3 +47,17 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Ping Bing, Naver and other IndexNow engines about new or re-dated pages
+  indexnow:
+    needs: [build, deploy]
+    if: needs.build.outputs.indexnow != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: printf '%s\n' "$URLS" | node scripts/indexnow.mjs submit
+        env:
+          URLS: ${{ needs.build.outputs.indexnow }}
