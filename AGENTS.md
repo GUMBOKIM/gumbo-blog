@@ -64,3 +64,5 @@ git push           # main에 push하면 자동 배포
 
 - 댓글은 giscus(저장소 Discussions, Announcements 카테고리)를 쓴다. 설정은 `src/components/Comments.astro`.
 - RSS는 `/rss.xml`, 사이트맵은 `/sitemap-index.xml`, `robots.txt`도 자동 생성된다.
+- 검색엔진: 구글·네이버는 `src/consts.ts`의 메타 태그, 다음은 같은 파일의 PIN이 `robots.txt`에 들어간다. Bing은 구글 서치 콘솔에서 가져와 등록했다.
+- 배포할 때마다 새로 생겼거나 사이트맵 `lastmod`가 바뀐 주소를 IndexNow(Bing·네이버 등)에 알린다(`scripts/indexnow.mjs`). 이미 올린 글을 고치고 다시 알리고 싶으면 frontmatter에 `updated`를 적는다.
