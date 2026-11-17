@@ -1,0 +1,94 @@
+[
+  {
+    "key": "Q",
+    "label": "B\u266d",
+    "group": "lead",
+    "start": 0.363,
+    "end": 0.598,
+    "rate": 1
+  },
+  {
+    "key": "W",
+    "label": "B",
+    "group": "lead",
+    "start": 2.59,
+    "end": 2.917,
+    "rate": 1
+  },
+  {
+    "key": "E",
+    "label": "E\u266d",
+    "group": "lead",
+    "start": 2.94,
+    "end": 3.164,
+    "rate": 1
+  },
+  {
+    "key": "R",
+    "label": "LOW B\u266d",
+    "group": "bass",
+    "start": 0.363,
+    "end": 0.598,
+    "rate": 0.5
+  },
+  {
+    "key": "A",
+    "label": "KICK",
+    "group": "drum",
+    "source": "synthesized"
+  },
+  {
+    "key": "S",
+    "label": "SNARE",
+    "group": "drum",
+    "source": "synthesized"
+  },
+  {
+    "key": "D",
+    "label": "HAT",
+    "group": "drum",
+    "source": "synthesized"
+  },
+  {
+    "key": "F",
+    "label": "CLAP",
+    "group": "drum",
+    "source": "synthesized"
+  },
+  {
+    "key": "Z",
+    "label": "HOOK 1",
+    "group": "vocal",
+    "start": 11.22,
+    "end": 13.1,
+    "rate": 1,
+    "source": "MelBand RoFormer vocals + anvuew dereverb"
+  },
+  {
+    "key": "X",
+    "label": "HOOK 2",
+    "group": "vocal",
+    "start": 13.1,
+    "end": 14.58,
+    "rate": 1,
+    "source": "MelBand RoFormer vocals + anvuew dereverb"
+  },
+  {
+    "key": "C",
+    "label": "HOOK 3",
+    "group": "vocal",
+    "start": 14.58,
+    "end": 16.85,
+    "rate": 1,
+    "source": "MelBand RoFormer vocals + anvuew dereverb"
+  },
+  {
+    "key": "V",
+    "label": "HOOK 4",
+    "group": "vocal",
+    "start": 16.85,
+    "end": 18.7,
+    "rate": 1,
+    "source": "MelBand RoFormer vocals + anvuew dereverb"
+  }
+]

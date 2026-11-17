@@ -1,0 +1,58 @@
+---
+title: 'Tokyo Drift on your keyboard'
+description: Play the melody, drums, and vocals of Tokyo Drift with QWER, ASDF, and ZXCV.
+category: useless
+date: 2026-11-22
+---
+
+import { Image } from 'astro:assets';
+import Launchpad from '../../../components/launchpad/Launchpad.astro';
+import movieStill from './assets/tokyo-drift-film.jpg';
+import hardware from './assets/novation-launchpad.jpg';
+import performer from './assets/launchpad-performer.jpg';
+
+A keyboard launchpad for **Tokyo Drift** by TERIYAKI BOYZ, the theme song from *The Fast and the Furious: Tokyo Drift*. Play the melody, drums, and vocals yourself, and mix them together.
+
+<Image src={movieStill} alt="Han and Sean sitting in a car in The Fast and the Furious: Tokyo Drift" width={movieStill.width} height={movieStill.height} />
+<p class="caption">Han and Sean in *Tokyo Drift*. <a href="https://kino.novo5.com/a/stsenarist-na-brzi-i-yarostni-obeshchava-spravedlivost-za-khan">Photo: NOVO 5</a></p>
+
+## Why I made it
+
+DJ videos keep showing up in my recommendations lately, and I started noticing people playing Launchpads. **Tokyo Drift** is one of the tracks I hear often in those DJ videos. I wanted to split its sounds across pads and play it myself, so I made this.
+
+## Play it
+
+<Launchpad locale="en" />
+
+Press **Play demo** to hear a roughly one-minute arrangement. It moves from the intro to the vocal hook, through an instrumental section and drum break, and into the final hook. Follow the pad lights to learn when to play.
+
+Turn on **Beat loop**, repeat **Q**, then mix in **W** and **E**. Try 90 BPM to start.
+
+| Keys | Sounds | How to play |
+| --- | --- | --- |
+| Q W E | Three notes from the opening melody | Repeat them to make a rhythm |
+| R | A lower melody note | Add a low accent |
+| A S D F | Kick · snare · hat · clap | Drum along yourself |
+| Z X C V | Four vocal hook phrases | Play them in order or repeat them |
+
+The layout is **QWER / ASDF / ZXCV**. It works with any keyboard input language. On a phone, tap the pads. Press **Esc** or **Stop all** to silence everything.
+
+## How I made it
+
+A real Launchpad is an 8×8 MIDI controller for music software such as Ableton. You press its pads to trigger clips or drum sounds. The photo below shows a Novation Launchpad X.
+
+<Image src={hardware} alt="A real Novation Launchpad X with its multicolored pads lit up" width={hardware.width} height={hardware.height} />
+<p class="caption">Novation Launchpad X. <a href="https://novationmusic.com/products/launchpad-x">Photo: Novation</a></p>
+
+In a performance, players tap many pads quickly with their fingers. Here is a moment from the Tokyo Drift Launchpad cover video.
+
+<Image src={performer} alt="A performer tapping the Launchpad during a Tokyo Drift cover video" width={performer.width} height={performer.height} />
+<p class="caption">Frame from <a href="https://www.youtube.com/watch?v=yf1eP8y2B88">Sergio Valentino’s Tokyo Drift Launchpad cover</a>.</p>
+
+This widget follows the original song at 127 BPM. I cut short notes from the opening melody for QWER, synthesized separate kick, snare, hat, and clap sounds for ASDF, and put four vocal hook phrases on ZXCV.
+
+I separated the vocals from the original recording with MelBand RoFormer, then ran them through a dereverb model. I could not find official vocal stems, so this was the best available source. The processing reduced separation artifacts but did not remove every trace.
+
+The demo is 32 bars: intro, hook, instrumental, drum break, and final hook. It plays for about a minute, then repeats. Web Audio schedules the beat and demo sounds to the tempo; the pad lights follow along. Manually triggered pads play immediately, without waiting for a beat.
+
+Changing tempo also changes the playback speed and pitch of the demo vocals and bass. At 127 BPM, they keep their original pitch.
