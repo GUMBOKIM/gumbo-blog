@@ -20,6 +20,9 @@
 	--accent: oklch(70.91% 0.1415 163.7); /* mint, for hover and the current menu */
 	--code-text: oklch(94.8% 0.106 136.49);
 	--border: oklch(38% 0.008 248);
+	--pad-lead: #58a6ff;
+	--pad-drum: #f2cc60;
+	--pad-vocal: #bc8cff;
 	color-scheme: dark;
 }
 

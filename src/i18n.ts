@@ -127,3 +127,20 @@ export function readingTime(body: string, locale: Locale) {
 	const minutes = locale === 'ko' ? text.replace(/\s/g, '').length / 500 : text.split(/\s+/).filter(Boolean).length / 200;
 	return Math.max(1, Math.round(minutes));
 }
+
+export const launchpadUi = {
+	ko: {
+		instrumental: '악기 연주', intro: '도입부', hook: '보컬 훅', breakdown: '브레이크', finale: '마지막 훅', freeplay: '자유 연주', idle: 'READY TO DRIFT', beat: '비트 반복', demo: '연주 데모', tempo: '템포', lead: '멜로디', drums: '드럼', vocal: '보컬', pattern: '멜로디 연습 · 불빛을 보며 따라 쳐 보세요',
+		title: '도쿄 드리프트 런치패드', start: '사운드 준비', loaded: '준비 완료', stop: '전체 정지', volume: '볼륨',
+		hint: '연주 데모로 먼저 들어 보세요. QWER 멜로디 · ASDF 드럼 · ZXCV 보컬. Esc로 정지합니다.',
+		loading: '샘플을 불러오는 중…', ready: '비트 반복을 켜고 Q를 여러 번, W와 E를 섞어 쳐 보세요. 한글 입력 상태에서도 됩니다.',
+		error: '소리를 불러오지 못했어요. 사운드 준비 버튼을 눌러 다시 시도하세요.', noScript: '연주하려면 JavaScript를 켜 주세요.',
+	},
+	en: {
+		instrumental: 'INSTRUMENTAL', intro: 'INTRO', hook: 'VOCAL HOOK', breakdown: 'BREAK', finale: 'FINAL HOOK', freeplay: 'FREE PLAY', idle: 'READY TO DRIFT', beat: 'Beat loop', demo: 'Play demo', tempo: 'Tempo', lead: 'Melody', drums: 'Drums', vocal: 'Vocals', pattern: 'Melody practice · follow the pad lights',
+		title: 'Tokyo Drift launchpad', start: 'Load sounds', loaded: 'Ready', stop: 'Stop all', volume: 'Volume',
+		hint: 'Try Play demo first. QWER melody · ASDF drums · ZXCV vocals. Esc stops everything.',
+		loading: 'Loading samples…', ready: 'Turn on Beat loop, repeat Q and mix in W and E. Or play the drums yourself.',
+		error: 'Could not load audio. Press Load sounds to try again.', noScript: 'Enable JavaScript to play.',
+	},
+} satisfies Record<Locale, Record<string, string>>;
