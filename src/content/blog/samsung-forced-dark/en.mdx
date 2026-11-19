@@ -341,11 +341,16 @@ In the end, the one thing in your hands is not to rely on color alone to carry m
 
 ## What I built
 
-If it cannot be stopped, you should at least be able to see it without a Galaxy phone, so I built a few things from the rules above.
+If it cannot be stopped, you should at least be able to see it without a Galaxy phone, so I built a few things from the rules above. They all live in one repository.
 
-- **The library [samsung-forced-dark-mode](https://github.com/GUMBOKIM/samsung-forced-dark-mode)**: detection and emulation in one, with no runtime dependencies. A page cannot touch the paint stage, so it imitates it by giving each element a role (background, button, text, border…) and overwriting the computed colors with inline styles. SVGs are measured shape by shape, and bitmaps are read pixel by pixel to tell icons apart.
-- **A Chrome extension, "Forced Dark Preview for Samsung Internet"**: clicking the toolbar button makes the current page look like Samsung Internet. The extension can fetch images from other sites, so it also converts external icons and SVGs that a script inside the page cannot read. It has not been through store review yet, so for now it is installed from the repository.
-- **The demos in this post**: the cubes, the color comparison, and the sample screen above all run on the same rules.
+**Repository: [github.com/GUMBOKIM/samsung-forced-dark-mode](https://github.com/GUMBOKIM/samsung-forced-dark-mode)**
+
+1. **Forced dark detection (`detect`)**: tells you whether forced dark is applied to the current page, using the SVG → canvas method above. The result is one of `forced`, `not-forced`, `not-samsung`, and `unknown`.
+2. **Forced dark emulation (`emulate`)**: makes a page in an ordinary browser look like Samsung Internet. A page cannot touch the paint stage, so it gives each element a role (background, button, text, border…) and overwrites the computed colors with inline styles. SVGs are measured shape by shape, and bitmaps are read pixel by pixel to tell icons apart. When the page changes, it converts again.
+3. **Ready-to-use builds**: an ES module, a single TypeScript file to copy into a project, a file that applies itself from one `<script>` tag, and a bookmarklet. No runtime dependencies.
+4. **A Chrome extension, "Forced Dark Preview for Samsung Internet"**: clicking the toolbar button makes the current page look like Samsung Internet. The extension can fetch images from other sites, so it also converts external icons and SVGs that a script inside the page cannot read. It has not been through store review yet, so for now it is installed from the repository.
+5. **A comparison harness**: with the phone on USB, it opens the same page in Samsung Internet and in Chrome with the library, and compares the captures pixel by pixel. It includes a script that freezes a page by copying it whole, images and CSS included. The match rates below were measured with it.
+6. **The demos in this post**: the cubes, the color comparison, the sample screen, and the detection check all run on the same rules.
 
 On the same Galaxy, I put Samsung Internet side by side with Chrome running the library and compared pixels. A pixel matched when every channel was within 10.
 
@@ -353,7 +358,6 @@ On the same Galaxy, I put Samsung Internet side by side with Chrome running the 
 |---|---|
 | 285 test cells combining element types and colors | 277 cells (97.2%) |
 | 13 article and product pages, including BBC, CNN, Naver News, and Amazon | 97.2% on average, lowest 78.3% |
-| The same 285 cells with Chrome's auto dark mode | 25 cells (8.8%) |
 
 The article pages were frozen, with their images and CSS copied, so that ads and banners could not change between captures. That leaves out script behavior, iframes, video, and canvas, and live sites may match less. Chrome's auto dark mode works differently, so it cannot preview what Samsung shows. Colors that change on `:hover` or `:focus` are not handled yet.
 
