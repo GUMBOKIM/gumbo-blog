@@ -1,0 +1,825 @@
+---
+/**
+ * Demos for the forced dark mode post.
+ * `pipeline` marks where the colors change, `cube` compares every paint target as an RGB cube, `lab` repaints a
+ * sample page, `probe` compares one color across paint roles, and `mine` checks the reader's browser.
+ */
+import type { Locale } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+	variant: 'pipeline' | 'cube' | 'lab' | 'probe' | 'mine';
+}
+
+const { locale, variant } = Astro.props;
+
+const copy = {
+	ko: {
+		modes: { original: '원본', samsung: '삼성 인터넷', chromium: 'Chromium', invert: 'CSS 반전' },
+		hint: '화면의 요소를 누르면 색이 어떻게 바뀌었는지 나옵니다.',
+		inspector: '선택한 요소',
+		shop: '모닝빵 베이커리',
+		nav: '메뉴',
+		hero: '오늘 아침에 구운 빵',
+		heroSub: '오전 7시부터 나옵니다',
+		badge: '인기',
+		item: '우유 식빵',
+		itemSub: '겉은 얇고 속은 촉촉합니다.',
+		price: '4,800원',
+		placeholder: '요청 사항을 적어 주세요',
+		order: '바로 주문하기',
+		cart: '장바구니',
+		chart: '요일별 판매량 (canvas)',
+		photo: '접시에 놓인 빵 그림',
+		color: '넣을 색',
+		role: '그리는 역할',
+		mine: '이 브라우저 검사',
+		checkLabel: '검증',
+		pipeline: [
+			['렌더 트리', '계산된 스타일 확정', 'getComputedStyle로 색 읽기', '화면은 어두운데 JS는 rgb(255, 255, 255)를 받음', '색 그대로'],
+			['레이아웃', '위치와 크기 계산', '고정 좌표에 둔 칸을 스크린샷에서 읽기', '2,816칸 모두 놓은 자리에 그려짐', '배치 그대로'],
+			['페인트', '그리기 명령 기록', '#808080을 대상별로 칠하기', '배경 16, 테두리 77, SVG 153, 글자 164', '여기서 바뀜'],
+			['래스터', '명령을 픽셀로 변환', '같은 회색의 결과 비교하기', '픽셀만 보고 바꾼다면 값이 하나여야 하는데 대상마다 다름', '이미 바뀐 색'],
+			['합성', '화면에 표시', 'canvas에 회색 칠하기', '0, 128, 255가 칠한 값 그대로 나옴', '화면 필터 없음'],
+		],
+		cubeSides: { white: '흰색 쪽', black: '검정 쪽' },
+		cubeSideLabel: '큐브 방향',
+		cubePresets: '예시 색',
+		strings: {
+			roles: { root: '문서 배경', background: '배경', button: '버튼 배경', field: '입력창 배경', gradient: '그라디언트', border: '테두리', outline: '외곽선', shadow: '그림자', svg: 'SVG', svgSmall: '20px 미만 SVG 도형 (뒤집기)', text: '글자', image: '<img> 이미지', bgimage: 'CSS 배경 이미지' },
+			props: { color: '글자색', 'background-color': '배경색', 'background-image': '배경 이미지', border: '테두리', 'box-shadow': '그림자', fill: '채움', stroke: '선', '--dl-placeholder': '안내 문구' },
+			luma: '밝기 Y {from} → {to}, 색차는 그대로',
+			flipped: '밝기 {n}, 변환 대상이라 CIELAB 명도를 뒤집음',
+			kept: '밝기 {n}, 변환 대상이 아니라 그대로 둠',
+			imageSamsung: '<img>는 모든 채널에 0.7을 곱합니다.',
+			imageChromium: '큰 사진은 분류기가 사진으로 판단해 그대로 둡니다.',
+			canvas: 'canvas 안의 픽셀은 어느 쪽도 바꾸지 않습니다.',
+			invert: '페이지 전체를 한 번에 뒤집기 때문에 요소별 역할이 없습니다.',
+			original: '원본 색 그대로입니다. 다른 모드를 고르면 변환 내용이 나옵니다.',
+			empty: '화면의 요소를 눌러 보세요.',
+			detected: '강제 다크가 켜져 있습니다. 흰색 이미지를 읽은 값은 {n}입니다.',
+			clean: '삼성 인터넷이지만 강제 다크 신호를 찾지 못했습니다. 흰색 이미지를 읽은 값은 {n}입니다.',
+			notSamsung: '삼성 인터넷이 아닙니다. 흰색 이미지를 읽은 값은 {n}입니다.',
+			failed: '이 브라우저에서는 canvas를 읽을 수 없어 검사하지 못했습니다.',
+			live: '지금 이 기기에서 강제 다크가 실제로 켜져 있습니다. 그래서 원본 버튼의 화면이 진짜 삼성 인터넷의 결과이고, 다른 방식은 변환이 두 번 겹칩니다.',
+			cubeFailed: '큐브를 불러오지 못했습니다. 아래 띠와 값은 그대로 볼 수 있습니다.',
+			rampRoles: { identity: '원본', background: '배경', input: '입력창', button: '버튼', gradient: '그라디언트', outline: '외곽선', border: '테두리', shadow: '그림자', 'svg-rect': 'SVG', text: '글자', 'img-png': '<img>', 'bg-png': 'CSS 배경 이미지' },
+		},
+	},
+	en: {
+		modes: { original: 'Original', samsung: 'Samsung Internet', chromium: 'Chromium', invert: 'CSS invert' },
+		hint: 'Tap anything on the page to see how its colors changed.',
+		inspector: 'Selected element',
+		shop: 'Morning Bakery',
+		nav: 'Menu',
+		hero: 'Baked this morning',
+		heroSub: 'Out of the oven from 7 a.m.',
+		badge: 'Popular',
+		item: 'Milk loaf',
+		itemSub: 'Thin crust, soft inside.',
+		price: '$4.80',
+		placeholder: 'Add a note for the bakery',
+		order: 'Order now',
+		cart: 'Add to cart',
+		chart: 'Sales by weekday (canvas)',
+		photo: 'Illustration of bread on a plate',
+		color: 'Color',
+		role: 'Painted as',
+		mine: 'Check this browser',
+		checkLabel: 'Checked',
+		pipeline: [
+			['Render tree', 'Resolve computed styles', 'Read the color with getComputedStyle', 'The screen is dark, but JS gets rgb(255, 255, 255)', 'Color unchanged'],
+			['Layout', 'Position and size', 'Read cells at fixed coordinates from screenshots', 'All 2,816 cells were drawn where they were placed', 'Nothing moves'],
+			['Paint', 'Record draw commands', 'Paint #808080 as each target', 'Background 16, border 77, SVG 153, text 164', 'Colors change here'],
+			['Raster', 'Turn commands into pixels', 'Compare results for the same gray', 'A pass over pixels would give one value, but each target differs', 'Already changed'],
+			['Composite', 'Put it on screen', 'Fill a canvas with grays', '0, 128, and 255 come out exactly as filled', 'No screen filter'],
+		],
+		cubeSides: { white: 'White side', black: 'Black side' },
+		cubeSideLabel: 'Cube direction',
+		cubePresets: 'Example colors',
+		strings: {
+			roles: { root: 'Document background', background: 'Background', button: 'Button background', field: 'Input background', gradient: 'Gradient', border: 'Border', outline: 'Outline', shadow: 'Shadow', svg: 'SVG', svgSmall: 'SVG shape under 20px (inverted)', text: 'Text', image: '<img> image', bgimage: 'CSS background image' },
+			props: { color: 'Text color', 'background-color': 'Background', 'background-image': 'Background image', border: 'Border', 'box-shadow': 'Shadow', fill: 'Fill', stroke: 'Stroke', '--dl-placeholder': 'Placeholder' },
+			luma: 'Luma Y {from} → {to}, chroma unchanged',
+			flipped: 'Brightness {n} qualifies, so CIELAB lightness is inverted',
+			kept: 'Brightness {n} does not qualify, so the color stays',
+			imageSamsung: 'An <img> has every channel multiplied by 0.7.',
+			imageChromium: 'The classifier treats a large picture as a photo and leaves it alone.',
+			canvas: 'Neither browser changes the pixels inside a canvas.',
+			invert: 'The whole page flips at once, so elements have no roles here.',
+			original: 'These are the original colors. Pick another mode to see the conversion.',
+			empty: 'Tap an element on the page.',
+			detected: 'Forced dark is on. A white image read back as {n}.',
+			clean: 'This is Samsung Internet, but no sign of forced dark was found. A white image read back as {n}.',
+			notSamsung: 'This is not Samsung Internet. A white image read back as {n}.',
+			failed: 'This browser would not let the page read the canvas, so the check could not run.',
+			live: 'Forced dark is really on for this device. The Original button shows the true Samsung Internet result, and the other methods convert the page twice.',
+			cubeFailed: 'The cubes could not be loaded. The strips and values below still work.',
+			rampRoles: { identity: 'Original', background: 'Background', input: 'Input field', button: 'Button', gradient: 'Gradient', outline: 'Outline', border: 'Border', shadow: 'Shadow', 'svg-rect': 'SVG', text: 'Text', 'img-png': '<img>', 'bg-png': 'CSS background' },
+		},
+	},
+}[locale];
+
+const photo =
+	'data:image/svg+xml,' +
+	encodeURIComponent(
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 150"><defs><linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e3c4"/><stop offset="1" stop-color="#d9a766"/></linearGradient><radialGradient id="b" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#f2c078"/><stop offset=".7" stop-color="#c47a2c"/><stop offset="1" stop-color="#8a4f1a"/></radialGradient></defs><rect width="320" height="150" fill="url(#w)"/><ellipse cx="160" cy="118" rx="125" ry="22" fill="#fff" opacity=".85"/><ellipse cx="112" cy="88" rx="62" ry="38" fill="url(#b)"/><ellipse cx="205" cy="92" rx="56" ry="33" fill="url(#b)"/><path d="M84 72q14 12 8 30M112 66q14 14 8 36M140 72q10 12 6 28" stroke="#f6dcae" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+	);
+
+const modes = Object.entries(copy.modes);
+const strings = JSON.stringify(copy.strings);
+---
+
+{
+	variant === 'pipeline' && (
+		<figure class="dl-crp">
+			<ol class="dl-crp-chain">
+				{copy.pipeline.map(([name, what, how, result, verdict], i) => (
+					<li data-hot={i === 2 ? '' : undefined}>
+						<strong>{name}</strong>
+						<span>{what}</span>
+						<small class="dl-crp-how">
+							<b>{copy.checkLabel}</b>
+							{how}
+						</small>
+						<small>{result}</small>
+						<em>{verdict}</em>
+					</li>
+				))}
+			</ol>
+		</figure>
+	)
+}
+
+{
+	variant === 'cube' && (
+		<div class="dl" data-darklab="cube" data-strings={strings}>
+			<div class="dl-cube-bar">
+				<label class="dl-pick">
+					<span>{copy.color}</span>
+					<input type="color" value="#fee500" />
+					<code data-value />
+				</label>
+				<div class="dl-cube-presets" role="group" aria-label={copy.cubePresets} data-presets />
+				<div class="dl-cube-sides" role="group" aria-label={copy.cubeSideLabel}>
+					<button type="button" data-side="white">{copy.cubeSides.white}</button>
+					<button type="button" data-side="black">{copy.cubeSides.black}</button>
+				</div>
+			</div>
+			<p class="dl-note" data-status hidden />
+			<div class="dl-cube-stage" data-stage>
+				<canvas class="dl-cube-gl" data-gl aria-hidden="true" />
+				<div class="dl-cube-grid" data-grid />
+			</div>
+		</div>
+	)
+}
+
+{
+	variant === 'lab' && (
+		<div class="dl" data-darklab="lab" data-strings={strings}>
+			<div class="dl-modes" role="group">
+				{modes.map(([key, label]) => (
+					<button type="button" data-mode={key} aria-pressed={key === 'samsung'}>
+						{label}
+					</button>
+				))}
+			</div>
+			<p class="dl-live" data-live hidden />
+			<div class="dl-stage">
+				<div class="dl-phone">
+					<div class="dl-sample" data-sample>
+						<header class="s-head">
+							<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="12" cy="12" r="10" fill="#ff5714" />
+								<path d="M7 13c2-5 8-5 10 0" stroke="#ffffff" stroke-width="2" fill="none" />
+							</svg>
+							<b tabindex="0">{copy.shop}</b>
+							<span class="s-nav" tabindex="0">{copy.nav}</span>
+						</header>
+						<section class="s-hero" tabindex="0">
+							<h4>{copy.hero}</h4>
+							<p>{copy.heroSub}</p>
+						</section>
+						<img src={photo} alt={copy.photo} width="320" height="150" tabindex="0" />
+						<article class="s-card" tabindex="0">
+							<span class="s-badge" tabindex="0">{copy.badge}</span>
+							<h5 tabindex="0">{copy.item}</h5>
+							<p tabindex="0">{copy.itemSub}</p>
+							<strong class="s-price" tabindex="0">{copy.price}</strong>
+						</article>
+						<input type="text" placeholder={copy.placeholder} aria-label={copy.placeholder} readonly />
+						<button type="button" class="s-cta" data-start>{copy.order}</button>
+						<button type="button" class="s-sub">{copy.cart}</button>
+						<figure class="s-chart">
+							<canvas width="300" height="100" tabindex="0" aria-label={copy.chart} />
+							<figcaption>{copy.chart}</figcaption>
+						</figure>
+					</div>
+				</div>
+				<aside class="dl-side">
+					<p class="dl-label">{copy.inspector}</p>
+					<div data-report aria-live="polite" />
+					<p class="dl-hint">{copy.hint}</p>
+				</aside>
+			</div>
+		</div>
+	)
+}
+
+{
+	variant === 'probe' && (
+		<div class="dl" data-darklab="probe" data-strings={strings}>
+			<label class="dl-pick">
+				<span>{copy.color}</span>
+				<input type="color" value="#fee500" />
+				<code data-value />
+			</label>
+			<div class="dl-scroll">
+				<table class="dl-table">
+					<thead>
+						<tr>
+							<th scope="col">{copy.role}</th>
+							<th scope="col">{copy.modes.samsung}</th>
+							<th scope="col">{copy.modes.chromium}</th>
+						</tr>
+					</thead>
+					<tbody />
+				</table>
+			</div>
+		</div>
+	)
+}
+
+{
+	variant === 'mine' && (
+		<div class="dl dl-mine" data-darklab="mine" data-strings={strings}>
+			<p class="dl-label">{copy.mine}</p>
+			<p data-mine aria-live="polite">…</p>
+		</div>
+	)
+}
+
+<script>
+	import { mountAll } from './widget';
+	document.addEventListener('astro:page-load', mountAll);
+</script>
+
+<style is:global>
+	.dl {
+		margin: 2em 0;
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+
+	.dl-modes {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 4px;
+		margin-bottom: 12px;
+	}
+
+	.dl-modes button {
+		min-height: 44px;
+		padding: 6px 4px;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: transparent;
+		color: var(--text);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.dl-modes button[aria-pressed='true'] {
+		border-color: var(--accent);
+		background: var(--bg-secondary);
+		color: var(--headings);
+		font-weight: 600;
+	}
+
+	.dl-stage {
+		display: grid;
+		grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+		gap: 20px;
+		align-items: start;
+	}
+
+	.dl-phone {
+		overflow: hidden;
+		border: 6px solid #30343a;
+		border-radius: 22px;
+		background: #30343a;
+	}
+
+	.dl-side {
+		position: sticky;
+		top: 16px;
+		min-width: 0;
+	}
+
+	.dl-label {
+		margin: 0 0 8px;
+		color: var(--text-secondary);
+		font-size: 0.8rem;
+	}
+
+	.dl-hint,
+	.dl-note {
+		margin: 8px 0 0;
+		color: var(--text-secondary);
+	}
+
+	.dl-row {
+		padding: 10px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.dl-row strong {
+		display: block;
+		color: var(--headings);
+		font-weight: 600;
+	}
+
+	.dl-row small {
+		display: block;
+		color: var(--text-secondary);
+	}
+
+	.dl-change {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 8px;
+		align-items: center;
+		margin: 4px 0;
+	}
+
+	.dl-swatch {
+		display: inline-flex;
+		gap: 6px;
+		align-items: center;
+	}
+
+	.dl-chip {
+		width: 16px;
+		height: 16px;
+		border: 1px solid var(--text-secondary);
+		border-radius: 3px;
+	}
+
+	.dl-swatch code {
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+	}
+
+	/* The sample is a light page on purpose, so it sets every color itself. */
+	.dl-sample {
+		color-scheme: light;
+		padding: 0 0 14px;
+		background: #ffffff;
+		color: #1f2328;
+		font-family: var(--font-sans);
+		font-size: 14px;
+		line-height: 1.45;
+		cursor: pointer;
+	}
+
+	.dl-sample.dl-inverted {
+		filter: invert(1) hue-rotate(180deg);
+	}
+
+	.dl-sample [data-picked] {
+		outline: 2px dashed #e0359a;
+		outline-offset: 1px;
+	}
+
+	.dl-sample :focus-visible {
+		outline: 2px solid #e0359a;
+		outline-offset: 1px;
+	}
+
+	.dl-sample h4,
+	.dl-sample h5,
+	.dl-sample p,
+	.dl-sample figure {
+		margin: 0;
+		color: inherit;
+	}
+
+	.dl-sample .s-head {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+		padding: 10px 14px;
+		border-bottom: 1px solid #e3e6ea;
+		background: #ffffff;
+	}
+
+	.dl-sample .s-nav {
+		margin-left: auto;
+		color: #57606a;
+	}
+
+	.dl-sample .s-hero {
+		padding: 16px 14px;
+		background: linear-gradient(120deg, #ff8a3d, #ffd23f);
+		color: #2b1600;
+	}
+
+	.dl-sample .s-hero h4 {
+		font-size: 18px;
+	}
+
+	.dl-sample img {
+		display: block;
+		width: 100%;
+		height: auto;
+		margin: 0;
+		border-radius: 0;
+	}
+
+	.dl-sample .s-card {
+		margin: 12px 14px;
+		padding: 12px;
+		border: 1px solid #d0d7de;
+		border-radius: 10px;
+		background: #f6f8fa;
+		box-shadow: 0 2px 6px rgba(31, 35, 40, 0.18);
+	}
+
+	.dl-sample .s-card h5 {
+		margin-top: 6px;
+		font-size: 15px;
+	}
+
+	.dl-sample .s-card p {
+		color: #57606a;
+	}
+
+	.dl-sample .s-badge {
+		padding: 1px 7px;
+		border-radius: 999px;
+		background: #ffe3d6;
+		color: #c2410c;
+		font-size: 12px;
+	}
+
+	.dl-sample .s-price {
+		color: #ff5714;
+		font-size: 16px;
+	}
+
+	.dl-sample input,
+	.dl-sample button {
+		display: block;
+		width: calc(100% - 28px);
+		min-height: 44px;
+		margin: 8px 14px 0;
+		border-radius: 8px;
+		font: inherit;
+	}
+
+	.dl-sample input {
+		padding: 0 10px;
+		border: 1px solid #d0d7de;
+		background: #ffffff;
+		color: #1f2328;
+		cursor: pointer;
+	}
+
+	.dl-sample input::placeholder {
+		color: var(--dl-placeholder, #6e7781);
+		opacity: 1;
+	}
+
+	.dl-sample .s-cta {
+		border: 0;
+		background: #fee500;
+		color: #191600;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.dl-sample .s-sub {
+		border: 1px solid #1a73e8;
+		background: #ffffff;
+		color: #1a73e8;
+		cursor: pointer;
+	}
+
+	.dl-sample .s-chart {
+		margin: 12px 14px 0;
+	}
+
+	.dl-sample canvas {
+		display: block;
+		width: 100%;
+		height: auto;
+		border: 1px solid #e3e6ea;
+		border-radius: 6px;
+	}
+
+	.dl-sample figcaption {
+		margin-top: 4px;
+		color: #57606a;
+		font-size: 12px;
+	}
+
+	.dl-pick {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+
+	.dl-pick input {
+		width: 44px;
+		height: 44px;
+		padding: 2px;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.dl-scroll {
+		overflow-x: auto;
+	}
+
+	.dl-table {
+		width: 100%;
+		margin: 0;
+		border-collapse: collapse;
+	}
+
+	.dl-table th,
+	.dl-table td {
+		padding: 8px;
+		border-bottom: 1px solid var(--border);
+		text-align: left;
+		white-space: nowrap;
+	}
+
+	.dl-table tbody th {
+		font-weight: 400;
+	}
+
+	.dl-mine {
+		padding: 12px 14px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--bg-secondary);
+	}
+
+	.dl-mine[data-hit] {
+		border-color: var(--accent);
+	}
+
+	.dl-mine p:last-child {
+		margin: 0;
+		color: var(--headings);
+	}
+
+	.dl-live {
+		margin: 0 0 12px;
+		padding: 8px 12px;
+		border: 1px solid var(--accent);
+		border-radius: 6px;
+	}
+
+	.dl-crp {
+		margin: 2em 0;
+		font-size: 0.78rem;
+		line-height: 1.45;
+	}
+
+	.dl-crp-chain li {
+		border: 1px solid var(--border);
+		border-radius: 6px;
+	}
+
+	.dl-crp-chain {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.dl-crp-chain {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 6px;
+	}
+
+	/* Subgrid lines up each card's rows, so the checks read straight across the stages. */
+	.dl-crp-chain li {
+		display: grid;
+		grid-row: span 5;
+		grid-template-rows: subgrid;
+		gap: 4px;
+		margin: 0;
+		padding: 10px 8px;
+	}
+
+	.dl-crp-chain li[data-hot] {
+		border-color: var(--accent);
+		background: var(--bg-secondary);
+	}
+
+	.dl-crp-chain strong {
+		color: var(--headings);
+	}
+
+	.dl-crp-chain small {
+		color: var(--text-secondary);
+		font-size: 0.72rem;
+		overflow-wrap: anywhere;
+	}
+
+	.dl-crp-chain .dl-crp-how {
+		margin-top: 4px;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+		color: var(--text);
+	}
+
+	.dl-crp-how b {
+		display: block;
+		color: var(--text-secondary);
+		font-weight: 600;
+	}
+
+	.dl-crp-chain em {
+		color: var(--headings);
+		font-style: normal;
+		font-weight: 600;
+	}
+
+	.dl-crp-chain li[data-hot] em {
+		color: var(--accent);
+	}
+
+	.dl-cube-bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 16px;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+
+	.dl-cube-bar .dl-pick {
+		margin: 0;
+	}
+
+	.dl-cube-bar code {
+		min-width: 4.6em;
+		font-family: var(--font-mono);
+	}
+
+	.dl-cube-presets,
+	.dl-cube-sides {
+		display: flex;
+		gap: 4px;
+	}
+
+	.dl-cube-sides {
+		margin-left: auto;
+	}
+
+	.dl-cube-preset,
+	.dl-cube-sides button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0 10px;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: transparent;
+		color: var(--text);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.dl-cube-preset {
+		padding: 0;
+	}
+
+	.dl-cube-preset[aria-pressed='true'],
+	.dl-cube-sides button[aria-pressed='true'] {
+		border-color: var(--accent);
+		background: var(--bg-secondary);
+		color: var(--headings);
+	}
+
+	.dl-cube-stage {
+		position: relative;
+		cursor: grab;
+		/* Vertical swipes keep scrolling the page; sideways drags turn the cubes. */
+		touch-action: pan-y;
+		user-select: none;
+	}
+
+	.dl-cube-stage:active {
+		cursor: grabbing;
+	}
+
+	.dl-cube-gl {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+	}
+
+	.dl-cube-grid {
+		position: relative;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 16px 10px;
+	}
+
+	/* The strip sits at the bottom so a row stays level when one caption wraps. */
+	.dl-cube-cell {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		margin: 0;
+	}
+
+	.dl-cube-view {
+		aspect-ratio: 1;
+	}
+
+	.dl-cube-cell figcaption {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px 6px;
+		align-items: center;
+		justify-content: space-between;
+		margin: 2px 0 6px;
+		text-align: left;
+	}
+
+	.dl-cube-cell b {
+		color: var(--headings);
+		font-weight: 600;
+	}
+
+	.dl-cube-cell .dl-chip {
+		width: 12px;
+		height: 12px;
+	}
+
+	.dl-cube-cell code {
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+	}
+
+	.dl-cube-strip {
+		display: block;
+		width: 100%;
+		margin-top: auto;
+		height: 10px;
+		border-radius: 2px;
+		image-rendering: pixelated;
+	}
+
+	@media (max-width: 680px) {
+		.dl-modes {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.dl-stage {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.dl-phone {
+			width: 100%;
+			max-width: 360px;
+			margin: 0 auto;
+		}
+
+		.dl-side {
+			position: static;
+		}
+
+		.dl-crp-chain {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.dl-cube-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 12px 8px;
+		}
+
+		/* Long target names would wrap unevenly, so every caption takes two lines here. */
+		.dl-cube-cell figcaption {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.dl-cube-sides {
+			margin-left: 0;
+		}
+	}
+</style>
