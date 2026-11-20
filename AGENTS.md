@@ -44,6 +44,7 @@ npm run photo <원본경로> <대상> [이름] [가로폭] [square]
 
 - 다크 테마 전용. 색은 GitHub dark 팔레트이고 `src/styles/global.css`의 `:root` 변수로 관리한다.
 - 폰트는 시스템 폰트만 쓴다. 한글 웹폰트는 파일이 100개 넘게 쪼개져 로딩이 버벅였다.
+  예외로 링크 미리보기 이미지(`/og/<locale>/<slug>.png`)는 빌드 때 `src/og.ts`가 Pretendard로 그린다. 방문자는 폰트를 내려받지 않는다.
 - 본문 폭은 `--max-width`(768px) 하나로 조절한다.
 - 레이아웃이 흔들리지 않게 유지한다: 굵은 글씨 자리 미리 확보(`[data-label]`), `scrollbar-gutter: stable`.
 

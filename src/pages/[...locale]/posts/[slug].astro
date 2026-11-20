@@ -35,6 +35,7 @@ const t = ui[locale];
 	description={post.data.description}
 	alternate={alternate}
 	published={post.data.date}
+	image={`/og/${locale}/${postSlug(post)}.png`}
 >
 	<article>
 		<h1 class="post-title">{post.data.title}</h1>
